@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>推し事管理 - OSHI-GOTO Management</title>
+    <style>
+        :root { --primary-color: #ff6b6b; --bg-color: #f8f9fa; --edit-color: #2196f3; }
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: var(--bg-color); margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow-x: hidden; }
+
+        .main-wrapper { display: flex; flex-direction: row; gap: 20px; padding: 20px; max-width: 900px; width: 100%; box-sizing: border-box; }
+        @media (max-width: 750px) { .main-wrapper { flex-direction: column; align-items: center; } }
+
+        .toggle-settings-btn { background: #555; color: white; border: none; padding: 10px 20px; border-radius: 20px; cursor: pointer; font-size: 13px; margin: 10px 0; font-weight: bold; }
+        #settings-area { display: none; width: 100%; }
+
+        .panel { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); margin-bottom: 20px; box-sizing: border-box; width: 100%; }
+
+        #collection-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(65px, 1fr)); gap: 10px; margin-top: 10px; border-top: 1px solid #eee; padding-top: 10px; }
+        .collection-item { width: 100%; aspect-ratio: 1/1; border-radius: 10px; overflow: hidden; border: 2px solid #eee; position: relative; }
+        .collection-item img { width: 100%; height: 100%; object-fit: cover; }
+        .delete-img { position: absolute; top: 0; right: 0; background: rgba(0,0,0,0.7); color: white; padding: 2px 6px; cursor: pointer; font-size: 12px; }
+
+        input, select { width: 100%; padding: 12px; margin-top: 8px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; outline: none; }
+        .row-group { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
+        .row-group label { font-size: 12px; color: #666; white-space: nowrap; }
+
+        #add-btn { width: 100%; background: var(--primary-color); color: white; border: none; padding: 15px; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 10px; font-size: 16px; transition: 0.2s; }
+        #add-btn.edit-mode { background: var(--edit-color); }
+
+        ul { list-style: none; padding: 0; margin: 0; width: 100%; }
+        li { background: white; padding: 15px; border-radius: 12px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 3px 6px rgba(0,0,0,0.04); gap: 12px; border-left: 5px solid var(--primary-color); }
+
+        .btn-group { display: flex; gap: 8px; }
+        .complete-btn { background: #4caf50; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 12px; }
+        .edit-task-btn { background: var(--edit-color); color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 12px; }
+
+        /* [FIX #19] オーバーレイはクリックで閉じられるようにpointer-eventsを有効化 */
+        #praise-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 2000; cursor: pointer; }
+        .praise-card { width: 320px; height: 420px; background: white; border-radius: 25px; overflow: hidden; box-shadow: 0 0 50px var(--primary-color); position: relative; z-index: 2001; animation: popInOut 4.5s ease-in-out forwards; }
+        @keyframes popInOut { 0% { transform: scale(0.6); opacity: 0; } 10% { transform: scale(1); opacity: 1; } 90% { transform: scale(1); opacity: 1; } 100% { transform: scale(0.9); opacity: 0; } }
+        #praise-img { width: 100%; height: 100%; object-fit: cover; }
+        .shower-word { position: fixed; color: white; font-weight: bold; font-size: 1.8rem; text-shadow: 0 0 10px rgba(255,107,107,0.8), 2px 2px 4px #000; z-index: 2002; white-space: nowrap; pointer-events: none; animation: showerFall 2.2s ease-out forwards; }
+        @keyframes showerFall { 0% { transform: scale(0.5); opacity: 0; } 20% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1) translateY(-120px); opacity: 0; } }
+        canvas { position: fixed; top: 0; left: 0; pointer-events: none; z-index: 2100; }
+
+        /* [FIX #15] 日時未入力警告 */
+        .warn-msg { color: #e65100; font-size: 12px; margin-top: 4px; display: none; }
+
+        /* [FIX] 画像読み込み中のプログレス表示 */
+        #img-loading { font-size: 12px; color: #888; margin-top: 4px; display: none; }
+    </style>
+</head>
+<body>
+
+<canvas id="fireworks"></canvas>
+<div id="praise-overlay"><div class="praise-card"><img id="praise-img" src="" alt="推し画像"></div></div>
+
+<button class="toggle-settings-btn" onclick="toggleSettings()">⚙️ 設定（画像やセリフ）</button>
+
+<div class="main-wrapper">
+    <div class="left-column" id="settings-area">
+        <div class="panel">
+            <label style="font-weight:bold; font-size:14px;">📸 推し画像コレクション</label>
+            <!-- [FIX #20] multiple属性を追加して複数選択に対応 -->
+            <input type="file" accept="image/*" id="file-input" multiple style="margin-top:10px;">
+            <div id="img-loading">📷 画像を処理中...</div>
+            <div id="collection-container"></div>
+            <div style="margin-top:20px;">
+                <label style="font-weight:bold; font-size:14px;">💬 褒め言葉 / ⏰ セリフ</label>
+                <input type="text" id="praise-input" value="天才！,最高！,さすがだよ！,偉すぎる！">
+                <input type="text" id="remind-input" value="時間だよー！,忘れてない？,今から頑張ろう！">
+            </div>
+            <!-- [FIX #18] データ初期化に確認ダイアログを追加 -->
+            <button onclick="confirmReset()" style="margin-top:20px; font-size:10px; background:none; border:1px solid #ccc; cursor:pointer;">データを初期化する(復旧用)</button>
+        </div>
+    </div>
+
+    <div class="right-column" style="flex:1.5; width: 100%;">
+        <div class="panel">
+            <h2 style="margin:0 0 15px 0; color:#444; font-size: 1.3rem; text-align:center;">💼 推し事管理 💼</h2>
+            <div class="row-group">
+                <input type="date" id="date-input" style="flex:1.5;">
+                <input type="time" id="time-input" style="flex:1;">
+            </div>
+            <!-- [FIX #15] 日時未入力の注意表示 -->
+            <div class="warn-msg" id="datetime-warn">⚠️ 通知するには日付と時刻の両方を入力してください</div>
+            <div class="row-group">
+                <label>🔁 再通知:</label>
+                <select id="interval-input">
+                    <option value="0">なし</option>
+                    <option value="1">1分ごと</option>
+                    <option value="3">3分ごと</option>
+                    <option value="5">5分ごと</option>
+                </select>
+            </div>
+            <input type="text" id="todo-input" placeholder="次のお仕事（推し事）は何？">
+            <button id="add-btn">タスクを追加</button>
+        </div>
+        <ul id="todo-list"></ul>
+    </div>
+</div>
+
+<script>
+try {
+    const fileInput       = document.getElementById('file-input');
+    const todoInput       = document.getElementById('todo-input');
+    const dateInput       = document.getElementById('date-input');
+    const timeInput       = document.getElementById('time-input');
+    const intervalInput   = document.getElementById('interval-input');
+    const addBtn          = document.getElementById('add-btn');
+    const todoList        = document.getElementById('todo-list');
+    const collectionContainer = document.getElementById('collection-container');
+    const praiseInput     = document.getElementById('praise-input');
+    const remindInput     = document.getElementById('remind-input');
+    const datetimeWarn    = document.getElementById('datetime-warn');
+    const imgLoading      = document.getElementById('img-loading');
+
+    let imageCollection = [];
+    let taskList        = [];
+    let editIndex       = -1;
+    let audioCtx;
+    let showerActive    = false; // [FIX #16] 多重エフェクト防止フラグ
+
+    // ─── AudioContext ───────────────────────────────────────────────────
+    function initAudio() {
+        if (!audioCtx) {
+            try {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            } catch(e) {
+                console.warn("AudioContext初期化失敗:", e);
+            }
+        }
+    }
+    function playBeep() {
+        if (!audioCtx) return;
+        try {
+            const osc  = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.type = "sine";
+            osc.frequency.value = 880;
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            osc.start();
+            gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.5);
+            osc.stop(audioCtx.currentTime + 0.5);
+        } catch(e) {
+            console.warn("beep失敗:", e);
+        }
+    }
+
+    // [FIX #11] iOS対応: mousedown + touchstart 両方で初期化
+    document.body.addEventListener('mousedown',  initAudio, { once: true });
+    document.body.addEventListener('touchstart', initAudio, { once: true });
+
+    // ─── 設定パネル開閉 ──────────────────────────────────────────────────
+    function toggleSettings() {
+        const area = document.getElementById('settings-area');
+        area.style.display = (area.style.display === "block") ? "none" : "block";
+    }
+
+    // ─── localStorage 保存 ───────────────────────────────────────────────
+    function saveData() {
+        try {
+            const payload = JSON.stringify({
+                tasks:   taskList,
+                praises: praiseInput.value,
+                reminds: remindInput.value,
+                images:  imageCollection
+            });
+            // [FIX #2] 保存前にサイズ確認（5MBを上限の目安に）
+            const sizeKB = (new Blob([payload]).size / 1024).toFixed(0);
+            if (sizeKB > 4500) {
+                alert(`⚠️ データが大きすぎます（${sizeKB}KB）。\n古い画像を削除してから保存してください。`);
+                return false;
+            }
+            localStorage.setItem('oshigoto_v_stable', payload);
+            return true;
+        } catch (e) {
+            if (e.name === 'QuotaExceededError') {
+                alert("💾 保存容量がいっぱいです！\n画像を削除してから再度お試しください。");
+            } else {
+                console.error("保存エラー:", e);
+                alert("保存中にエラーが発生しました。");
+            }
+            return false;
+        }
+    }
+
+    // ─── タスク描画 ──────────────────────────────────────────────────────
+    function escapeHtml(str) {
+        // [FIX #5] XSS対策: テキストをエスケープ
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function renderTasks() {
+        taskList.sort((a, b) => {
+            const timeA = (a.date || '9999-12-31') + (a.time || '23:59');
+            const timeB = (b.date || '9999-12-31') + (b.time || '23:59');
+            return timeA.localeCompare(timeB);
+        });
+        todoList.innerHTML = '';
+        taskList.forEach((task, idx) => {
+            const li = document.createElement('li');
+            // [FIX #5] task.textをescapeHtmlで安全化
+            li.innerHTML = `
+                <div style="flex:1">
+                    <div style="font-size:11px; color:#999">${escapeHtml(task.date || '')} ${escapeHtml(task.time || '')}</div>
+                    <div style="font-weight:bold;">${escapeHtml(task.text)}</div>
+                </div>
+                <div class="btn-group">
+                    <button class="edit-task-btn" data-idx="${idx}">修正</button>
+                    <button class="complete-btn" data-idx="${idx}">完了！</button>
+                </div>`;
+            todoList.appendChild(li);
+        });
+
+        // イベント委譲でボタンを処理
+        todoList.querySelectorAll('.edit-task-btn').forEach(btn => {
+            btn.addEventListener('click', () => startEdit(parseInt(btn.dataset.idx)));
+        });
+        todoList.querySelectorAll('.complete-btn').forEach(btn => {
+            btn.addEventListener('click', () => completeTask(parseInt(btn.dataset.idx)));
+        });
+    }
+
+    // ─── タスク追加・編集 ────────────────────────────────────────────────
+    addBtn.addEventListener('click', () => {
+        initAudio();
+        const text = todoInput.value.trim();
+        if (!text) return;
+
+        // [FIX #15] 日付と時刻の片方だけ入力されていたら警告
+        const hasDate = !!dateInput.value;
+        const hasTime = !!timeInput.value;
+        if ((hasDate && !hasTime) || (!hasDate && hasTime)) {
+            datetimeWarn.style.display = 'block';
+            return;
+        }
+        datetimeWarn.style.display = 'none';
+
+        const taskData = {
+            text,
+            date:         dateInput.value,
+            time:         timeInput.value,
+            interval:     parseInt(intervalInput.value),
+            lastNotified: null
+        };
+
+        if (editIndex > -1) {
+            taskList[editIndex] = taskData;
+            editIndex = -1;
+            addBtn.textContent = "タスクを追加";
+            addBtn.classList.remove('edit-mode');
+        } else {
+            taskList.push(taskData);
+        }
+
+        todoInput.value = '';
+        dateInput.value = '';
+        timeInput.value = '';
+        intervalInput.value = "0";
+        saveData();
+        renderTasks();
+    });
+
+    // ─── 編集開始 ────────────────────────────────────────────────────────
+    function startEdit(idx) {
+        const task = taskList[idx];
+        todoInput.value    = task.text;
+        dateInput.value    = task.date;
+        timeInput.value    = task.time;
+        intervalInput.value = task.interval || "0";
+        editIndex          = idx;
+        addBtn.textContent = "修正を保存する";
+        addBtn.classList.add('edit-mode');
+        todoInput.focus();
+    }
+
+    // ─── タスク完了 ──────────────────────────────────────────────────────
+    function completeTask(idx) {
+        if (imageCollection.length === 0) {
+            alert("画像を登録してね！");
+            return;
+        }
+        // [FIX #13] 誤タップ防止の確認ダイアログ
+        const taskName = taskList[idx] ? taskList[idx].text : '';
+        if (!confirm(`「${taskName}」を完了にしますか？`)) return;
+
+        // [FIX #6] 編集中インデックスのズレを防止
+        if (editIndex === idx) {
+            editIndex = -1;
+            addBtn.textContent = "タスクを追加";
+            addBtn.classList.remove('edit-mode');
+        } else if (editIndex > idx) {
+            editIndex--;
+        }
+
+        showShowerEffect(praiseInput.value, `「${taskName}」完了おめでとう！`);
+        taskList.splice(idx, 1);
+        saveData();
+        renderTasks();
+    }
+
+    // ─── 通知チェック（setInterval） ────────────────────────────────────
+    // [FIX #14] Page Visibility APIでバックグラウンド時はスキップ
+    setInterval(() => {
+        if (document.hidden) return;
+
+        const now         = new Date();
+        const nowStrDate  = now.toLocaleDateString('sv-SE');
+        const nowStrTime  = now.toTimeString().slice(0, 5);
+        const nowTotal    = now.getHours() * 60 + now.getMinutes();
+
+        taskList.forEach(task => {
+            if (!task.date || !task.time) return;
+            const isInitial = (task.date === nowStrDate && task.time === nowStrTime);
+            const isRepeat  = (
+                task.interval > 0 &&
+                task.lastNotified !== null &&
+                (nowTotal - task.lastNotified) >= task.interval
+            );
+            if ((isInitial || isRepeat) && task.lastNotified !== nowTotal) {
+                task.lastNotified = nowTotal;
+                if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+                playBeep();
+                // [FIX #7] 画像がなくてもリマインダーは表示するが、画像なし対応
+                showShowerEffect(remindInput.value, `時間だよ！「${task.text}」！`);
+                saveData();
+            }
+        });
+    }, 5000);
+
+    // ─── エフェクト表示 ──────────────────────────────────────────────────
+    function showShowerEffect(wordSource, topWord) {
+        // [FIX #16] 多重エフェクト防止
+        if (showerActive) return;
+        showerActive = true;
+
+        // [FIX #17] words が空のときのフォールバック
+        const words = (wordSource || '').split(',').map(w => w.trim()).filter(Boolean);
+        const safeWords = words.length > 0 ? words : ['やったね！'];
+
+        const overlay  = document.getElementById('praise-overlay');
+        const praiseEl = document.getElementById('praise-img');
+
+        // [FIX #7] 画像なしでも動くように
+        if (imageCollection.length > 0) {
+            praiseEl.src = imageCollection[Math.floor(Math.random() * imageCollection.length)];
+            overlay.style.display = 'flex';
+        }
+
+        for (let i = 0; i < 15; i++) {
+            setTimeout(() => {
+                const wordDiv = document.createElement('div');
+                wordDiv.className = 'shower-word';
+                wordDiv.textContent = (i === 0 && topWord) ? topWord : safeWords[Math.floor(Math.random() * safeWords.length)];
+                wordDiv.style.left = (Math.random() * 70 + 15) + "%";
+                wordDiv.style.top  = (Math.random() * 70 + 15) + "%";
+                document.body.appendChild(wordDiv);
+                // [FIX #16] 削除確実に実施
+                setTimeout(() => { if (wordDiv.parentNode) wordDiv.parentNode.removeChild(wordDiv); }, 2200);
+            }, i * 150);
+        }
+
+        startFireworks();
+        setTimeout(() => {
+            overlay.style.display = 'none';
+            showerActive = false;
+        }, 4500);
+    }
+
+    // [FIX #19] オーバーレイクリックで手動クローズ
+    document.getElementById('praise-overlay').addEventListener('click', () => {
+        document.getElementById('praise-overlay').style.display = 'none';
+        showerActive = false;
+    });
+
+    // ─── 画像ファイル読み込み ────────────────────────────────────────────
+    // [FIX #1, #4, #20] 複数ファイル対応 + ファイル未選択チェック + Canvasリサイズ
+    fileInput.addEventListener('change', (e) => {
+        const files = Array.from(e.target.files || []);
+        if (files.length === 0) return; // [FIX #4] キャンセル時は何もしない
+
+        const MAX_W  = 400;
+        const MAX_H  = 400;
+        const MAX_KB = 200; // 1枚あたりの最大KB
+
+        imgLoading.style.display = 'block';
+        let processed = 0;
+
+        files.forEach(file => {
+            // [FIX #1] 画像をCanvasでリサイズしてからbase64保存
+            if (!file.type.startsWith('image/')) {
+                processed++;
+                if (processed === files.length) imgLoading.style.display = 'none';
+                return;
+            }
+
+            const url = URL.createObjectURL(file);
+            const img = new Image();
+            img.onload = () => {
+                URL.revokeObjectURL(url);
+
+                const canvas = document.createElement('canvas');
+                let w = img.width, h = img.height;
+
+                // アスペクト比を維持してリサイズ
+                if (w > MAX_W || h > MAX_H) {
+                    const ratio = Math.min(MAX_W / w, MAX_H / h);
+                    w = Math.round(w * ratio);
+                    h = Math.round(h * ratio);
+                }
+                canvas.width  = w;
+                canvas.height = h;
+                const ctx2d = canvas.getContext('2d');
+                ctx2d.drawImage(img, 0, 0, w, h);
+
+                // 品質を下げながらMAX_KB以内に収める
+                let quality  = 0.85;
+                let dataUrl  = canvas.toDataURL('image/jpeg', quality);
+                while ((dataUrl.length * 0.75 / 1024) > MAX_KB && quality > 0.3) {
+                    quality -= 0.1;
+                    dataUrl = canvas.toDataURL('image/jpeg', quality);
+                }
+
+                imageCollection.push(dataUrl);
+                processed++;
+                if (processed === files.length) {
+                    imgLoading.style.display = 'none';
+                    renderCollection();
+                    saveData();
+                }
+            };
+            img.onerror = () => {
+                URL.revokeObjectURL(url);
+                processed++;
+                if (processed === files.length) {
+                    imgLoading.style.display = 'none';
+                    renderCollection();
+                    saveData();
+                }
+                alert(`「${file.name}」の読み込みに失敗しました。`);
+            };
+            img.src = url;
+        });
+
+        // input をリセットして同じファイルを再度選択できるように
+        fileInput.value = '';
+    });
+
+    // ─── 画像コレクション描画 ────────────────────────────────────────────
+    function renderCollection() {
+        collectionContainer.innerHTML = '';
+        imageCollection.forEach((imgSrc, idx) => {
+            const div  = document.createElement('div');
+            div.className = 'collection-item';
+            const img  = document.createElement('img');
+            img.src    = imgSrc;
+            img.alt    = `推し画像${idx + 1}`;
+            const span = document.createElement('span');
+            span.className   = 'delete-img';
+            span.textContent = '×';
+            span.addEventListener('click', () => deleteImage(idx));
+            div.appendChild(img);
+            div.appendChild(span);
+            collectionContainer.appendChild(div);
+        });
+    }
+
+    function deleteImage(idx) {
+        if (!confirm('この画像を削除しますか？')) return;
+        imageCollection.splice(idx, 1);
+        renderCollection();
+        saveData();
+    }
+
+    // ─── データ初期化 ────────────────────────────────────────────────────
+    // [FIX #18] 確認ダイアログを追加
+    function confirmReset() {
+        if (confirm('⚠️ すべてのデータを初期化しますか？\nこの操作は取り消せません。')) {
+            localStorage.clear();
+            location.reload();
+        }
+    }
+
+    // ─── データ読み込み ──────────────────────────────────────────────────
+    // [FIX #9] window.onload → addEventListener
+    window.addEventListener('load', () => {
+        const saved = localStorage.getItem('oshigoto_v_stable');
+        if (saved) {
+            // [FIX #3] JSON.parse を try-catch で保護
+            try {
+                const data       = JSON.parse(saved);
+                imageCollection  = data.images  || [];
+                taskList         = data.tasks   || [];
+                praiseInput.value = data.praises || "天才！,最高！,さすが！";
+                remindInput.value = data.reminds || "時間だよー！,頑張ろう！";
+                renderCollection();
+                renderTasks();
+            } catch (parseErr) {
+                console.error("データ読み込みエラー:", parseErr);
+                alert("保存データが破損していたため読み込めませんでした。\n初期状態で起動します。");
+                localStorage.removeItem('oshigoto_v_stable');
+            }
+        }
+
+        // [FIX #12] CanvasサイズをアニメーションONの前に確実に設定
+        canvas.width  = window.innerWidth;
+        canvas.height = window.innerHeight;
+        animate();
+    });
+
+    // [FIX #15] 日付/時刻 入力変化時に警告を消す
+    dateInput.addEventListener('input', () => { datetimeWarn.style.display = 'none'; });
+    timeInput.addEventListener('input', () => { datetimeWarn.style.display = 'none'; });
+
+    // ─── 花火アニメーション ──────────────────────────────────────────────
+    const canvas = document.getElementById('fireworks');
+    const ctx    = canvas.getContext('2d');
+    let particles = [];
+
+    function startFireworks() {
+        particles = [];
+        for (let i = 0; i < 80; i++) {
+            particles.push({
+                x:  window.innerWidth  / 2,
+                y:  window.innerHeight / 2,
+                dx: (Math.random() - 0.5) * 20,
+                dy: (Math.random() - 0.5) * 20,
+                c:  `hsl(${Math.random() * 360},100%,60%)`,
+                l:  100
+            });
+        }
+    }
+
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // [FIX #8] forEach + splice → filter に変更してインデックスズレを防止
+        particles = particles.filter(p => {
+            p.x  += p.dx;
+            p.y  += p.dy;
+            p.dy += 0.1;
+            p.l  -= 1;
+            if (p.l <= 0) return false;
+            ctx.fillStyle   = p.c;
+            ctx.globalAlpha = p.l / 100;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+            ctx.fill();
+            return true;
+        });
+        ctx.globalAlpha = 1;
+
+        requestAnimationFrame(animate);
+    }
+
+    // [FIX #9] window.onresize → addEventListener
+    window.addEventListener('resize', () => {
+        canvas.width  = window.innerWidth;
+        canvas.height = window.innerHeight;
+    });
+
+} catch (criticalError) {
+    console.error("Critical Start Error:", criticalError);
+    alert("起動時にエラーが発生しました。\nページを再読み込みするか、データを初期化してください。");
+}
+</script>
+</body>
+</html>
