@@ -120,6 +120,15 @@
         .main-event-row { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
         .main-event-row input[type="checkbox"] { width: auto; margin: 0; cursor: pointer; accent-color: var(--primary-color); width: 16px; height: 16px; }
         .main-event-row label { font-size: 13px; color: #555; cursor: pointer; font-weight: bold; user-select: none; }
+
+        /* ヘルプ */
+        .header-btn-row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin: 10px 0; }
+        .toggle-help-btn { background: #5c6bc0; color: white; border: none; padding: 10px 20px; border-radius: 20px; cursor: pointer; font-size: 13px; font-weight: bold; }
+        #help-panel { display: none; width: 100%; max-width: 900px; background: white; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); padding: 24px 28px; box-sizing: border-box; margin-bottom: 10px; }
+        .help-section { margin-bottom: 20px; }
+        .help-section:last-child { margin-bottom: 0; }
+        .help-section h3 { font-size: 14px; font-weight: bold; color: #444; margin: 0 0 8px 0; padding-bottom: 6px; border-bottom: 2px solid #eee; }
+        .help-section p { font-size: 13px; color: #555; line-height: 1.7; margin: 0; white-space: pre-wrap; }
     </style>
 </head>
 <body>
@@ -127,7 +136,52 @@
 <canvas id="fireworks"></canvas>
 <div id="praise-overlay"><div class="praise-card"><img id="praise-img" src="" alt="推し画像"></div></div>
 
-<button class="toggle-settings-btn" onclick="toggleSettings()">⚙️ 設定（画像やセリフ）</button>
+<div class="header-btn-row">
+    <button class="toggle-settings-btn" onclick="toggleSettings()">⚙️ 設定（画像やセリフ）</button>
+    <button class="toggle-help-btn" onclick="toggleHelp()">？ ヘルプ</button>
+</div>
+
+<div id="help-panel">
+    <div class="help-section">
+        <h3>📋 基本的な使い方</h3>
+        <p>日付・時刻・タスク名を入力して「タスクを追加」ボタンで登録。
+完了したタスクは「完了！」ボタンを押すと褒め言葉エフェクトとともにアーカイブに移動。
+タスクは左のカラーラインで推しごとに色分けされます。</p>
+    </div>
+    <div class="help-section">
+        <h3>👑 推しの登録方法</h3>
+        <p>設定パネルの「推し管理」で推しの名前とイメージカラーを登録。
+タスク追加時に推しを選択するとタスクの左ラインがその推しカラーで表示されます。</p>
+    </div>
+    <div class="help-section">
+        <h3>📸 画像コレクションの登録方法</h3>
+        <p>設定パネルの「推し画像コレクション」から画像を登録（最大10枚）。
+タスク完了時にランダムで表示されます。</p>
+    </div>
+    <div class="help-section">
+        <h3>⭐ メインイベントのカウントダウン設定</h3>
+        <p>タスク追加時に「⭐ メインイベント」にチェックを入れると
+最も近いメインイベントまでのカウントダウンが表示されます。</p>
+    </div>
+    <div class="help-section">
+        <h3>🌙 おやすみモードの設定</h3>
+        <p>設定パネルの「おやすみモード」で通知をミュートする時間帯を設定できます。
+就寝中の通知を防ぎたいときに使用してください。</p>
+    </div>
+    <div class="help-section">
+        <h3>💾 データのエクスポート/インポート</h3>
+        <p>設定パネルからタスク・画像・設定をJSONファイルとして保存できます。
+機種変更やブラウザ変更の際のバックアップとして活用してください。</p>
+    </div>
+    <div class="help-section">
+        <h3>⚠️ 注意事項</h3>
+        <p>・PC用ブラウザ（Chrome・Edge推奨）での使用を推奨します
+・Firefoxで時刻を入力する際は直接入力してください
+・スマホではリマインダー通知が動作しない場合があります
+・ブラウザの履歴を削除するとデータが消える場合があります
+　（定期的にエクスポートでバックアップを推奨）</p>
+    </div>
+</div>
 
 <div id="countdown-area" style="display:none;">
     <div class="countdown-card">
@@ -545,6 +599,12 @@ try {
     function toggleSettings() {
         const area = document.getElementById('settings-area');
         area.style.display = (area.style.display === "block") ? "none" : "block";
+    }
+
+    // ─── ヘルプパネル開閉 ────────────────────────────────────────────────
+    function toggleHelp() {
+        const panel = document.getElementById('help-panel');
+        panel.style.display = (panel.style.display === "block") ? "none" : "block";
     }
 
     // ─── localStorage 保存 ───────────────────────────────────────────────
