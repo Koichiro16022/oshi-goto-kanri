@@ -533,29 +533,48 @@ try {
     function deleteOshi(idx) {
         if (!confirm(`「${oshiList[idx].name}」を削除しますか？`)) return;
         oshiList.splice(idx, 1);
-        if (mainOshiIndex >= oshiList.length) mainOshiIndex = 0;
-        else if (mainOshiIndex > idx) mainOshiIndex--;
         saveOshiData();
         renderOshiList();
     }
+
+    const OSHI_PRESET_COLORS = [
+        { color: '#888888', label: 'グレー' }, { color: '#FF0000', label: '赤' },
+        { color: '#FF66CC', label: 'ピンク' }, { color: '#FF6600', label: 'オレンジ' },
+        { color: '#FFFF00', label: '黄色' },   { color: '#00B050', label: '緑' },
+        { color: '#00B0F0', label: '水色' },   { color: '#0070C0', label: '青' },
+        { color: '#7030A0', label: '紫' },
+    ];
 
     function editOshi(idx) {
         const container = document.getElementById('oshi-list');
         const div = container.querySelector(`.oshi-item[data-idx="${idx}"]`);
         const oshi = oshiList[idx];
+        const swatchesHtml = OSHI_PRESET_COLORS.map(c =>
+            `<div class="color-swatch" style="background:${c.color};" title="${c.label}" data-color="${c.color}"></div>`
+        ).join('');
+        div.style.flexWrap = 'wrap';
         div.innerHTML = `
             <div class="oshi-color-dot" id="oshi-edit-dot-${idx}" style="background:${escapeHtml(oshi.color)};"></div>
             <input type="text" id="oshi-edit-name-${idx}" value="${escapeHtml(oshi.name)}" style="flex:1; margin:0; padding:6px 8px; font-size:13px; height:32px; box-sizing:border-box;">
             <input type="color" id="oshi-edit-color-${idx}" value="${escapeHtml(oshi.color)}" style="width:32px; height:32px; padding:2px; border:1px solid #ddd; border-radius:6px; cursor:pointer; flex-shrink:0; margin:0;">
             <button class="phrase-edit-btn" data-idx="${idx}">保存</button>
-            <button class="oshi-delete-btn" data-idx="${idx}">取消</button>`;
+            <button class="oshi-delete-btn" data-idx="${idx}">取消</button>
+            <div class="color-swatches oshi-swatches" style="width:100%; margin:6px 0 0 0;">${swatchesHtml}</div>`;
         div.querySelector('.phrase-edit-btn').addEventListener('click', () => saveOshiEdit(idx));
         div.querySelector('.oshi-delete-btn').addEventListener('click', () => renderOshiList());
-        div.querySelector(`#oshi-edit-color-${idx}`).addEventListener('input', (e) => {
+        const colorInput = div.querySelector(`#oshi-edit-color-${idx}`);
+        colorInput.addEventListener('input', (e) => {
             document.getElementById(`oshi-edit-dot-${idx}`).style.background = e.target.value;
         });
         div.querySelector(`#oshi-edit-name-${idx}`).addEventListener('keydown', (e) => {
             if (e.key === 'Enter') saveOshiEdit(idx);
+        });
+        div.querySelectorAll('.color-swatches .color-swatch').forEach(swatch => {
+            swatch.addEventListener('click', () => {
+                const c = swatch.dataset.color;
+                colorInput.value = c;
+                document.getElementById(`oshi-edit-dot-${idx}`).style.background = c;
+            });
         });
     }
 
@@ -589,7 +608,7 @@ try {
             div.innerHTML = `
                 <div class="oshi-color-dot" style="background:${escapeHtml(oshi.color)};"></div>
                 <span class="oshi-name">${escapeHtml(oshi.name)}</span>
-                <button class="phrase-edit-btn" data-idx="${idx}">編集</button>
+                <button class="phrase-edit-btn" data-idx="${idx}">修正</button>
                 <button class="oshi-delete-btn" data-idx="${idx}">削除</button>`;
             container.appendChild(div);
         });
