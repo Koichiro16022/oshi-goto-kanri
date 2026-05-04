@@ -63,7 +63,7 @@
         .restore-btn:hover { background: #c8e6c9; }
         .archive-delete-btn { background: #bbb; border: none; color: white; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 11px; white-space: nowrap; font-weight: bold; }
         .archive-delete-btn:hover { background: #999; }
-        .archive-delete-note { font-size: 9px; color: #ccc; text-align: center; }
+        .archive-delete-note { font-size: 9px; color: #333; text-align: center; }
         .completed-at { font-size: 10px; color: #bbb; margin-top: 2px; }
     </style>
 </head>
@@ -398,7 +398,7 @@ try {
                 <div class="archive-btn-group">
                     <button class="restore-btn" data-idx="${idx}">↩ 元に戻す</button>
                     <button class="archive-delete-btn" data-idx="${idx}">削除</button>
-                    <div class="archive-delete-note">取り消し不可</div>
+                    <div class="archive-delete-note">削除すると元に戻せません</div>
                 </div>`;
             archiveList.appendChild(li);
         });
