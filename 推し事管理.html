@@ -578,7 +578,7 @@ try {
         div.querySelector('.oshi-delete-btn').addEventListener('click', () => {
             oshiList[idx].color = originalColor;
             renderOshiList();
-            renderTaskList();
+            renderTasks();
         });
         div.querySelector(`#oshi-edit-name-${idx}`).addEventListener('keydown', (e) => {
             if (e.key === 'Enter') saveOshiEdit(idx);
@@ -598,7 +598,7 @@ try {
         oshiList[idx].name = name;
         saveOshiData();
         renderOshiList();
-        renderTaskList();
+        renderTasks();
     }
 
     function renderOshiList() {
