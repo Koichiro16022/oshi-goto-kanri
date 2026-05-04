@@ -512,6 +512,14 @@ try {
         }
         datetimeWarn.style.display = 'none';
 
+        // 日付と時刻が両方入力されている場合のみ過去日時チェック
+        if (hasDate && hasTime) {
+            const inputDateTime = new Date(`${dateInput.value}T${timeInput.value}`);
+            if (inputDateTime < new Date()) {
+                if (!confirm('⚠️ 過去の日時です。通知は届きません。このまま登録しますか？')) return;
+            }
+        }
+
         const taskData = {
             text,
             date:         dateInput.value,
