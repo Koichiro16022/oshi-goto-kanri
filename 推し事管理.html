@@ -508,15 +508,14 @@ try {
     }
 
     // ─── 推し管理 ────────────────────────────────────────────────────────
-    let oshiList       = [];
-    let mainOshiIndex  = 0;
+    let oshiList = [];
 
     function setOshiColor(color) {
         document.getElementById('oshi-color-input').value = color;
     }
 
     function saveOshiData() {
-        localStorage.setItem('oshigoto_oshi', JSON.stringify({ list: oshiList, main: mainOshiIndex }));
+        localStorage.setItem('oshigoto_oshi', JSON.stringify({ list: oshiList }));
     }
 
     function addOshi() {
@@ -540,10 +539,35 @@ try {
         renderOshiList();
     }
 
-    function setMainOshi(idx) {
-        mainOshiIndex = idx;
+    function editOshi(idx) {
+        const container = document.getElementById('oshi-list');
+        const div = container.querySelector(`.oshi-item[data-idx="${idx}"]`);
+        const oshi = oshiList[idx];
+        div.innerHTML = `
+            <div class="oshi-color-dot" id="oshi-edit-dot-${idx}" style="background:${escapeHtml(oshi.color)};"></div>
+            <input type="text" id="oshi-edit-name-${idx}" value="${escapeHtml(oshi.name)}" style="flex:1; margin:0; padding:6px 8px; font-size:13px; height:32px; box-sizing:border-box;">
+            <input type="color" id="oshi-edit-color-${idx}" value="${escapeHtml(oshi.color)}" style="width:32px; height:32px; padding:2px; border:1px solid #ddd; border-radius:6px; cursor:pointer; flex-shrink:0; margin:0;">
+            <button class="phrase-edit-btn" data-idx="${idx}">保存</button>
+            <button class="oshi-delete-btn" data-idx="${idx}">取消</button>`;
+        div.querySelector('.phrase-edit-btn').addEventListener('click', () => saveOshiEdit(idx));
+        div.querySelector('.oshi-delete-btn').addEventListener('click', () => renderOshiList());
+        div.querySelector(`#oshi-edit-color-${idx}`).addEventListener('input', (e) => {
+            document.getElementById(`oshi-edit-dot-${idx}`).style.background = e.target.value;
+        });
+        div.querySelector(`#oshi-edit-name-${idx}`).addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') saveOshiEdit(idx);
+        });
+    }
+
+    function saveOshiEdit(idx) {
+        const name  = document.getElementById(`oshi-edit-name-${idx}`).value.trim();
+        const color = document.getElementById(`oshi-edit-color-${idx}`).value;
+        if (!name) { alert('推しの名前を入力してください'); return; }
+        oshiList[idx].name  = name;
+        oshiList[idx].color = color;
         saveOshiData();
         renderOshiList();
+        renderTaskList();
     }
 
     function renderOshiList() {
@@ -559,21 +583,18 @@ try {
             return;
         }
         oshiList.forEach((oshi, idx) => {
-            const isMain = idx === mainOshiIndex;
             const div = document.createElement('div');
             div.className = 'oshi-item';
+            div.dataset.idx = idx;
             div.innerHTML = `
-                <span style="font-size:16px;">${isMain ? '★' : '☆'}</span>
                 <div class="oshi-color-dot" style="background:${escapeHtml(oshi.color)};"></div>
                 <span class="oshi-name">${escapeHtml(oshi.name)}</span>
-                ${isMain
-                    ? '<span style="font-size:11px; color:#c8a000; font-weight:bold; white-space:nowrap;">メイン推し</span>'
-                    : `<button class="oshi-main-btn" data-idx="${idx}">メイン</button>`}
+                <button class="phrase-edit-btn" data-idx="${idx}">編集</button>
                 <button class="oshi-delete-btn" data-idx="${idx}">削除</button>`;
             container.appendChild(div);
         });
-        container.querySelectorAll('.oshi-main-btn').forEach(btn => {
-            btn.addEventListener('click', () => setMainOshi(parseInt(btn.dataset.idx)));
+        container.querySelectorAll('.phrase-edit-btn').forEach(btn => {
+            btn.addEventListener('click', () => editOshi(parseInt(btn.dataset.idx)));
         });
         container.querySelectorAll('.oshi-delete-btn').forEach(btn => {
             btn.addEventListener('click', () => deleteOshi(parseInt(btn.dataset.idx)));
@@ -1322,7 +1343,7 @@ try {
 
     // 推し管理の読み込み
     const savedOshi = localStorage.getItem('oshigoto_oshi');
-    if (savedOshi) { try { const d = JSON.parse(savedOshi); oshiList = d.list || []; mainOshiIndex = d.main || 0; } catch(e) {} }
+    if (savedOshi) { try { const d = JSON.parse(savedOshi); oshiList = d.list || []; } catch(e) {} }
     renderOshiList();
     document.getElementById('oshi-name-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') addOshi(); });
 
