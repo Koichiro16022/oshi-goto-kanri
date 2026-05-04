@@ -1148,8 +1148,17 @@ try {
         imgLoading.style.display = 'block';
         let processed = 0;
 
+        const invalidFiles = files.filter(f => !f.type.startsWith('image/'));
+        if (invalidFiles.length > 0) {
+            alert(`画像ファイル以外は登録できません。\n（対応形式：JPG / PNG / GIF / WEBP など）\n\n対象外ファイル：${invalidFiles.map(f => f.name).join('、')}`);
+            if (invalidFiles.length === files.length) {
+                imgLoading.style.display = 'none';
+                fileInput.value = '';
+                return;
+            }
+        }
+
         files.forEach(file => {
-            // [FIX #1] 画像をCanvasでリサイズしてからbase64保存
             if (!file.type.startsWith('image/')) {
                 processed++;
                 if (processed === files.length) imgLoading.style.display = 'none';
