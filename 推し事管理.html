@@ -772,7 +772,7 @@ try {
             if (t.isMain) return false;
             if (!t.date) return false;
             if (t.time) return new Date(`${t.date}T${t.time}`) < targetDt;
-            return t.date <= targetDate;
+            return t.date < targetDate;
         }).length;
         document.getElementById('countdown-tasks').textContent =
             beforeCount > 0 ? `📋 それまでにやること ${beforeCount}件` : '';
