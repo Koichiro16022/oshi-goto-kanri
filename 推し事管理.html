@@ -68,6 +68,11 @@
         .archive-delete-note { font-size: 9px; color: #333; text-align: center; }
         .completed-at { font-size: 10px; color: #bbb; margin-top: 2px; }
 
+        /* おやすみモード */
+        .quiet-toggle-btn { border: none; padding: 6px 18px; border-radius: 15px; cursor: pointer; font-size: 12px; font-weight: bold; transition: 0.2s; }
+        .quiet-toggle-btn.off { background: #ddd; color: #888; }
+        .quiet-toggle-btn.on  { background: #5c6bc0; color: white; }
+
         /* データ管理ボタン */
         .data-mgmt-btn { background: #555; color: white; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: bold; }
         .data-mgmt-btn:hover { background: #333; }
@@ -154,6 +159,21 @@
                         <button class="phrase-add-btn" onclick="addPhrase('remind')">登録</button>
                     </div>
                     <ul id="remind-phrase-list" class="phrase-list"></ul>
+                </div>
+            </div>
+            <div style="margin-top:20px; border-top:1px solid #eee; padding-top:16px;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <label style="font-weight:bold; font-size:14px; flex:1;">🌙 おやすみモード</label>
+                    <button id="quiet-mode-toggle" class="quiet-toggle-btn off" onclick="toggleQuietMode()">OFF</button>
+                </div>
+                <div id="quiet-mode-settings" style="margin-top:10px;">
+                    <div class="row-group">
+                        <label style="font-size:12px; color:#666; white-space:nowrap;">開始:</label>
+                        <input type="time" id="quiet-start" value="23:00" style="flex:1; margin-top:0;">
+                        <label style="font-size:12px; color:#666; white-space:nowrap;">終了:</label>
+                        <input type="time" id="quiet-end" value="07:00" style="flex:1; margin-top:0;">
+                    </div>
+                    <div style="font-size:11px; color:#aaa; margin-top:6px;">設定した時間帯は通知をミュートします</div>
                 </div>
             </div>
             <div style="margin-top:24px; border-top:1px solid #eee; padding-top:16px;">
@@ -271,6 +291,36 @@ try {
     // [FIX #11] iOS対応: mousedown + touchstart 両方で初期化
     document.body.addEventListener('mousedown',  initAudio, { once: true });
     document.body.addEventListener('touchstart', initAudio, { once: true });
+
+    // ─── おやすみモード ──────────────────────────────────────────────────
+    let quietMode = { enabled: false, start: '23:00', end: '07:00' };
+
+    function isQuietTime() {
+        if (!quietMode.enabled) return false;
+        const now   = new Date();
+        const cur   = now.getHours() * 60 + now.getMinutes();
+        const [sh, sm] = quietMode.start.split(':').map(Number);
+        const [eh, em] = quietMode.end.split(':').map(Number);
+        const start = sh * 60 + sm;
+        const end   = eh * 60 + em;
+        return start <= end ? (cur >= start && cur < end) : (cur >= start || cur < end);
+    }
+
+    function toggleQuietMode() {
+        quietMode.enabled = !quietMode.enabled;
+        saveQuietMode();
+        renderQuietMode();
+    }
+
+    function saveQuietMode() {
+        localStorage.setItem('oshigoto_quietmode', JSON.stringify(quietMode));
+    }
+
+    function renderQuietMode() {
+        const btn = document.getElementById('quiet-mode-toggle');
+        btn.textContent = quietMode.enabled ? 'ON' : 'OFF';
+        btn.className   = `quiet-toggle-btn ${quietMode.enabled ? 'on' : 'off'}`;
+    }
 
     // ─── エクスポート/インポート ──────────────────────────────────────────
     function exportData() {
@@ -696,6 +746,7 @@ try {
     // [FIX #14] Page Visibility APIでバックグラウンド時はスキップ
     setInterval(() => {
         if (document.hidden) return;
+        if (isQuietTime()) return;
 
         const now         = new Date();
         const nowStrDate  = now.toLocaleDateString('sv-SE');
@@ -952,6 +1003,15 @@ try {
     todoInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') addBtn.click(); });
     document.getElementById('praise-new-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') addPhrase('praise'); });
     document.getElementById('remind-new-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') addPhrase('remind'); });
+
+    // おやすみモードの読み込みと時刻変更保存
+    const savedQuiet = localStorage.getItem('oshigoto_quietmode');
+    if (savedQuiet) { try { quietMode = JSON.parse(savedQuiet); } catch(e) {} }
+    document.getElementById('quiet-start').value = quietMode.start;
+    document.getElementById('quiet-end').value   = quietMode.end;
+    renderQuietMode();
+    document.getElementById('quiet-start').addEventListener('change', (e) => { quietMode.start = e.target.value; saveQuietMode(); });
+    document.getElementById('quiet-end').addEventListener('change',   (e) => { quietMode.end   = e.target.value; saveQuietMode(); });
     dateInput.addEventListener('input', () => { datetimeWarn.style.display = 'none'; });
     timeInput.addEventListener('input', () => { datetimeWarn.style.display = 'none'; });
 
