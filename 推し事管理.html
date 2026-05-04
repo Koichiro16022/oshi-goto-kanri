@@ -564,7 +564,11 @@ try {
         div.querySelector('.oshi-delete-btn').addEventListener('click', () => renderOshiList());
         const colorInput = div.querySelector(`#oshi-edit-color-${idx}`);
         colorInput.addEventListener('input', (e) => {
-            document.getElementById(`oshi-edit-dot-${idx}`).style.background = e.target.value;
+            const c = e.target.value;
+            document.getElementById(`oshi-edit-dot-${idx}`).style.background = c;
+            document.querySelectorAll(`#todo-list li[data-oshi-idx="${idx}"]`).forEach(li => {
+                li.style.borderLeftColor = c;
+            });
         });
         div.querySelector(`#oshi-edit-name-${idx}`).addEventListener('keydown', (e) => {
             if (e.key === 'Enter') saveOshiEdit(idx);
@@ -787,6 +791,7 @@ try {
         todoList.innerHTML = '';
         taskList.forEach((task, idx) => {
             const li = document.createElement('li');
+            li.dataset.oshiIdx = task.oshiIdx ?? -1;
             // [FIX #5] task.textをescapeHtmlで安全化
             const notifyDone   = task.maxNotify > 0 && (task.notifyCount || 0) >= task.maxNotify;
             const intervalText = formatInterval(task.interval);
