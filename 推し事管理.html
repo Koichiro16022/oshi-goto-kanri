@@ -459,6 +459,12 @@ try {
             .replace(/'/g, '&#39;');
     }
 
+    function formatInterval(min) {
+        if (!min || min === 0) return null;
+        const map = {5:'5分ごと',10:'10分ごと',15:'15分ごと',30:'30分ごと',60:'1時間ごと',180:'3時間ごと',360:'6時間ごと',720:'12時間ごと',1440:'1日ごと'};
+        return map[min] || `${min}分ごと`;
+    }
+
     function renderTasks() {
         taskList.sort((a, b) => {
             const timeA = (a.date || '9999-12-31') + (a.time || '23:59');
@@ -469,10 +475,17 @@ try {
         taskList.forEach((task, idx) => {
             const li = document.createElement('li');
             // [FIX #5] task.textをescapeHtmlで安全化
-            const notifyDone = task.maxNotify > 0 && (task.notifyCount || 0) >= task.maxNotify;
+            const notifyDone   = task.maxNotify > 0 && (task.notifyCount || 0) >= task.maxNotify;
+            const intervalText = formatInterval(task.interval);
+            const maxText      = task.maxNotify > 0 ? `上限${task.maxNotify}回` : '無制限';
+            const countText    = task.notifyCount > 0 ? `(${task.notifyCount}回通知済)` : '';
+            const notifyInfo   = intervalText
+                ? `<div style="font-size:10px; color:#aaa; margin-top:2px;">🔁 ${intervalText} / ${maxText} ${countText}</div>`
+                : '';
             li.innerHTML = `
                 <div style="flex:1">
                     <div style="font-size:11px; color:#999">${escapeHtml(task.date || '')} ${escapeHtml(task.time || '')}</div>
+                    ${notifyInfo}
                     <div style="font-weight:bold;">${escapeHtml(task.text)}</div>
                     ${notifyDone ? '<span class="notify-done-badge">🔕 通知終了</span>' : ''}
                 </div>
