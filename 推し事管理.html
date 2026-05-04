@@ -65,6 +65,16 @@
         .archive-delete-btn:hover { background: #666; }
         .archive-delete-note { font-size: 9px; color: #333; text-align: center; }
         .completed-at { font-size: 10px; color: #bbb; margin-top: 2px; }
+
+        /* セリフ管理UI */
+        .phrase-input-row { display: flex; gap: 8px; margin-top: 8px; }
+        .phrase-add-btn { background: var(--primary-color); color: white; border: none; padding: 10px 14px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: bold; white-space: nowrap; }
+        .phrase-add-btn:hover { opacity: 0.85; }
+        .phrase-list { list-style: none; padding: 0; margin: 8px 0 0 0; }
+        .phrase-list li { display: flex; align-items: center; gap: 6px; padding: 7px 10px; background: #f9f9f9; border-radius: 8px; margin-bottom: 5px; font-size: 13px; }
+        .phrase-list li span { flex: 1; word-break: break-all; }
+        .phrase-edit-btn { background: var(--edit-color); color: white; border: none; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: bold; white-space: nowrap; }
+        .phrase-delete-btn { background: #888; color: white; border: none; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: bold; white-space: nowrap; }
     </style>
 </head>
 <body>
@@ -83,9 +93,20 @@
             <div id="img-loading">📷 画像を処理中...</div>
             <div id="collection-container"></div>
             <div style="margin-top:20px;">
-                <label style="font-weight:bold; font-size:14px;">💬 褒め言葉 / ⏰ セリフ</label>
-                <input type="text" id="praise-input" value="天才！,最高！,さすがだよ！,偉すぎる！">
-                <input type="text" id="remind-input" value="時間だよー！,忘れてない？,今から頑張ろう！">
+                <label style="font-weight:bold; font-size:14px;">💬 褒め言葉</label>
+                <div class="phrase-input-row">
+                    <input type="text" id="praise-new-input" placeholder="例：天才！" style="flex:1; margin-top:0;">
+                    <button class="phrase-add-btn" onclick="addPhrase('praise')">登録</button>
+                </div>
+                <ul id="praise-phrase-list" class="phrase-list"></ul>
+            </div>
+            <div style="margin-top:16px;">
+                <label style="font-weight:bold; font-size:14px;">⏰ リマインダーセリフ</label>
+                <div class="phrase-input-row">
+                    <input type="text" id="remind-new-input" placeholder="例：時間だよ！" style="flex:1; margin-top:0;">
+                    <button class="phrase-add-btn" onclick="addPhrase('remind')">登録</button>
+                </div>
+                <ul id="remind-phrase-list" class="phrase-list"></ul>
             </div>
             <!-- [FIX #18] データ初期化に確認ダイアログを追加 -->
             <div style="margin-top:20px; display:flex; gap:8px; flex-wrap:wrap;">
@@ -139,14 +160,14 @@ try {
     const addBtn          = document.getElementById('add-btn');
     const todoList        = document.getElementById('todo-list');
     const collectionContainer = document.getElementById('collection-container');
-    const praiseInput     = document.getElementById('praise-input');
-    const remindInput     = document.getElementById('remind-input');
     const datetimeWarn    = document.getElementById('datetime-warn');
     const imgLoading      = document.getElementById('img-loading');
 
     let imageCollection = [];
     let taskList        = [];
     let archivedTasks   = [];
+    let praiseList      = ["天才！", "最高！", "さすがだよ！", "偉すぎる！"];
+    let remindList      = ["時間だよー！", "忘れてない？", "今から頑張ろう！"];
     let editIndex       = -1;
     let audioCtx;
     let showerActive    = false; // [FIX #16] 多重エフェクト防止フラグ
@@ -195,8 +216,8 @@ try {
             const payload = JSON.stringify({
                 tasks:    taskList,
                 archived: archivedTasks,
-                praises:  praiseInput.value,
-                reminds:  remindInput.value,
+                praises:  praiseList.join(','),
+                reminds:  remindList.join(','),
                 images:   imageCollection
             });
             // [FIX #2] 保存前にサイズ確認（5MBを上限の目安に）
@@ -216,6 +237,58 @@ try {
             }
             return false;
         }
+    }
+
+    // ─── セリフ管理 ──────────────────────────────────────────────────────
+    function getList(type) { return type === 'praise' ? praiseList : remindList; }
+
+    function renderPhraseList(type) {
+        const list = getList(type);
+        const ul   = document.getElementById(`${type}-phrase-list`);
+        ul.innerHTML = '';
+        list.forEach((phrase, idx) => {
+            const li = document.createElement('li');
+            li.innerHTML = `
+                <span>${escapeHtml(phrase)}</span>
+                <button class="phrase-edit-btn" data-type="${type}" data-idx="${idx}">編集</button>
+                <button class="phrase-delete-btn" data-type="${type}" data-idx="${idx}">削除</button>`;
+            ul.appendChild(li);
+        });
+        ul.querySelectorAll('.phrase-edit-btn').forEach(btn => {
+            btn.addEventListener('click', () => editPhrase(btn.dataset.type, parseInt(btn.dataset.idx)));
+        });
+        ul.querySelectorAll('.phrase-delete-btn').forEach(btn => {
+            btn.addEventListener('click', () => deletePhrase(btn.dataset.type, parseInt(btn.dataset.idx)));
+        });
+    }
+
+    function addPhrase(type) {
+        const input = document.getElementById(`${type}-new-input`);
+        const text  = input.value.trim();
+        if (!text) return;
+        getList(type).push(text);
+        input.value = '';
+        saveData();
+        renderPhraseList(type);
+    }
+
+    function editPhrase(type, idx) {
+        const list    = getList(type);
+        const newText = prompt('セリフを編集してください', list[idx]);
+        if (newText === null) return;
+        const trimmed = newText.trim();
+        if (!trimmed) return;
+        list[idx] = trimmed;
+        saveData();
+        renderPhraseList(type);
+    }
+
+    function deletePhrase(type, idx) {
+        const list = getList(type);
+        if (!confirm(`「${list[idx]}」を削除しますか？`)) return;
+        list.splice(idx, 1);
+        saveData();
+        renderPhraseList(type);
     }
 
     // ─── タスク描画 ──────────────────────────────────────────────────────
@@ -331,7 +404,7 @@ try {
         const completedAt = now.toLocaleDateString('sv-SE') + ' ' + now.toTimeString().slice(0, 5);
         archivedTasks.unshift({ ...completedTask, completedAt });
 
-        showShowerEffect(praiseInput.value, `「${taskName}」完了おめでとう！`);
+        showShowerEffect(praiseList.join(','), `「${taskName}」完了おめでとう！`);
         taskList.splice(idx, 1);
         saveData();
         renderTasks();
@@ -434,7 +507,7 @@ try {
                 if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
                 playBeep();
                 // [FIX #7] 画像がなくてもリマインダーは表示するが、画像なし対応
-                showShowerEffect(remindInput.value, `時間だよ！「${task.text}」！`);
+                showShowerEffect(remindList.join(','), `時間だよ！「${task.text}」！`);
                 saveData();
             }
         });
@@ -632,17 +705,22 @@ try {
                 imageCollection   = data.images   || [];
                 taskList          = data.tasks    || [];
                 archivedTasks     = data.archived || [];
-                praiseInput.value = data.praises  || "天才！,最高！,さすが！";
-                remindInput.value = data.reminds  || "時間だよー！,頑張ろう！";
+                praiseList = (data.praises || "天才！,最高！,さすが！").split(',').map(s => s.trim()).filter(Boolean);
+                remindList = (data.reminds || "時間だよー！,頑張ろう！").split(',').map(s => s.trim()).filter(Boolean);
                 renderCollection();
                 renderTasks();
                 renderArchive();
+                renderPhraseList('praise');
+                renderPhraseList('remind');
             } catch (parseErr) {
                 console.error("データ読み込みエラー:", parseErr);
                 alert("保存データが破損していたため読み込めませんでした。\n初期状態で起動します。");
                 localStorage.removeItem('oshigoto_v_stable');
             }
         }
+
+        renderPhraseList('praise');
+        renderPhraseList('remind');
 
         // [FIX #12] CanvasサイズをアニメーションONの前に確実に設定
         canvas.width  = window.innerWidth;
@@ -652,6 +730,8 @@ try {
 
     // [FIX #15] 日付/時刻 入力変化時に警告を消す
     todoInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') addBtn.click(); });
+    document.getElementById('praise-new-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') addPhrase('praise'); });
+    document.getElementById('remind-new-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') addPhrase('remind'); });
     dateInput.addEventListener('input', () => { datetimeWarn.style.display = 'none'; });
     timeInput.addEventListener('input', () => { datetimeWarn.style.display = 'none'; });
 
