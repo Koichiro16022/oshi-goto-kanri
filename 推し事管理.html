@@ -252,6 +252,12 @@
                     <option value="10">10回</option>
                 </select>
             </div>
+            <div class="row-group">
+                <label>⭐ 推しを選択:</label>
+                <select id="oshi-select">
+                    <option value="-1">未選択</option>
+                </select>
+            </div>
             <input type="text" id="todo-input" placeholder="次のお仕事（推し事）は何？">
             <button id="add-btn">タスクを追加</button>
         </div>
@@ -276,6 +282,7 @@ try {
     const timeInput       = document.getElementById('time-input');
     const intervalInput   = document.getElementById('interval-input');
     const maxNotifyInput  = document.getElementById('max-notify-input');
+    const oshiSelect      = document.getElementById('oshi-select');
     const addBtn          = document.getElementById('add-btn');
     const todoList        = document.getElementById('todo-list');
     const collectionContainer = document.getElementById('collection-container');
@@ -490,6 +497,21 @@ try {
         container.querySelectorAll('.oshi-delete-btn').forEach(btn => {
             btn.addEventListener('click', () => deleteOshi(parseInt(btn.dataset.idx)));
         });
+        renderOshiSelect();
+    }
+
+    function renderOshiSelect() {
+        const current = oshiSelect.value;
+        oshiSelect.innerHTML = '<option value="-1">未選択</option>';
+        oshiList.forEach((oshi, idx) => {
+            const opt = document.createElement('option');
+            opt.value = idx;
+            opt.textContent = oshi.name;
+            oshiSelect.appendChild(opt);
+        });
+        if ([...oshiSelect.options].some(o => o.value === current)) {
+            oshiSelect.value = current;
+        }
     }
 
     // ─── 設定パネル開閉 ──────────────────────────────────────────────────
@@ -658,6 +680,9 @@ try {
                     <button class="complete-btn" data-idx="${idx}">完了！</button>
                     <button class="delete-task-btn" data-idx="${idx}">削除</button>
                 </div>`;
+            const oshi = (task.oshiIdx != null && task.oshiIdx >= 0 && task.oshiIdx < oshiList.length)
+                ? oshiList[task.oshiIdx] : null;
+            li.style.borderLeftColor = oshi ? oshi.color : '#AAAAAA';
             todoList.appendChild(li);
         });
 
@@ -720,7 +745,8 @@ try {
             interval:     parseInt(intervalInput.value),
             maxNotify:    parseInt(maxNotifyInput.value),
             notifyCount:  0,
-            lastNotified: null
+            lastNotified: null,
+            oshiIdx:      parseInt(oshiSelect.value)
         };
 
         if (editIndex > -1) {
@@ -737,6 +763,7 @@ try {
         timeInput.value = '';
         intervalInput.value = "0";
         maxNotifyInput.value = "0";
+        oshiSelect.value = "-1";
         saveData();
         renderTasks();
     });
@@ -749,6 +776,7 @@ try {
         timeInput.value    = task.time;
         intervalInput.value  = task.interval  || "0";
         maxNotifyInput.value = task.maxNotify || "0";
+        oshiSelect.value     = (task.oshiIdx != null) ? task.oshiIdx : "-1";
         editIndex            = idx;
         addBtn.textContent = "修正を保存する";
         addBtn.classList.add('edit-mode');
