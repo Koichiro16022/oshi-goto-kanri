@@ -101,7 +101,7 @@
             </div>
             <div style="margin-top:20px;">
                 <div class="phrase-section-header">
-                    <label style="font-weight:bold; font-size:14px;">💬 褒め言葉</label>
+                    <label style="font-weight:bold; font-size:14px;">💬 褒め言葉 <span id="praise-count" style="font-weight:normal; font-size:12px; color:#999;"></span></label>
                     <button class="toggle-phrase-btn" id="toggle-praise-btn" onclick="togglePhrase('praise')">▼ 表示</button>
                 </div>
                 <div id="praise-phrase-body" style="display:none;">
@@ -114,7 +114,7 @@
             </div>
             <div style="margin-top:16px;">
                 <div class="phrase-section-header">
-                    <label style="font-weight:bold; font-size:14px;">⏰ リマインダーセリフ</label>
+                    <label style="font-weight:bold; font-size:14px;">⏰ リマインダーセリフ <span id="remind-count" style="font-weight:normal; font-size:12px; color:#999;"></span></label>
                     <button class="toggle-phrase-btn" id="toggle-remind-btn" onclick="togglePhrase('remind')">▼ 表示</button>
                 </div>
                 <div id="remind-phrase-body" style="display:none;">
@@ -267,8 +267,16 @@ try {
     function getList(type) { return type === 'praise' ? praiseList : remindList; }
 
     function renderPhraseList(type) {
-        const list = getList(type);
-        const ul   = document.getElementById(`${type}-phrase-list`);
+        const MAX_PHRASES = 20;
+        const list  = getList(type);
+        const ul    = document.getElementById(`${type}-phrase-list`);
+        const count = document.getElementById(`${type}-count`);
+        if (count) count.textContent = `(${list.length} / ${MAX_PHRASES})`;
+        const addBtn2 = document.querySelector(`#${type}-phrase-body .phrase-add-btn`);
+        if (addBtn2) {
+            addBtn2.disabled = list.length >= MAX_PHRASES;
+            addBtn2.style.opacity = list.length >= MAX_PHRASES ? '0.4' : '1';
+        }
         ul.innerHTML = '';
         list.forEach((phrase, idx) => {
             const li = document.createElement('li');
@@ -287,9 +295,14 @@ try {
     }
 
     function addPhrase(type) {
+        const MAX_PHRASES = 20;
         const input = document.getElementById(`${type}-new-input`);
         const text  = input.value.trim();
         if (!text) return;
+        if (getList(type).length >= MAX_PHRASES) {
+            alert(`登録できるセリフは最大${MAX_PHRASES}件です。`);
+            return;
+        }
         getList(type).push(text);
         input.value = '';
         saveData();
