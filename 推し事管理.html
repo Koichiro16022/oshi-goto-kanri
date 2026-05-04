@@ -39,9 +39,9 @@
 
         /* [FIX #19] オーバーレイはクリックで閉じられるようにpointer-eventsを有効化 */
         #praise-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 2000; cursor: pointer; }
-        .praise-card { width: 320px; height: 420px; background: white; border-radius: 25px; overflow: hidden; box-shadow: 0 0 50px var(--primary-color); position: relative; z-index: 2001; animation: popInOut 4.5s ease-in-out forwards; }
+        .praise-card { max-width: 85vw; max-height: 85vh; background: white; border-radius: 25px; overflow: hidden; box-shadow: 0 0 50px var(--primary-color); position: relative; z-index: 2001; animation: popInOut 4.5s ease-in-out forwards; display: flex; align-items: center; justify-content: center; }
         @keyframes popInOut { 0% { transform: scale(0.6); opacity: 0; } 10% { transform: scale(1); opacity: 1; } 90% { transform: scale(1); opacity: 1; } 100% { transform: scale(0.9); opacity: 0; } }
-        #praise-img { width: 100%; height: 100%; object-fit: cover; }
+        #praise-img { max-width: 85vw; max-height: 85vh; width: auto; height: auto; display: block; }
         .shower-word { position: fixed; color: white; font-weight: bold; font-size: 1.8rem; text-shadow: 0 0 10px rgba(255,107,107,0.8), 2px 2px 4px #000; z-index: 2002; white-space: nowrap; pointer-events: none; animation: showerFall 2.2s ease-out forwards; }
         @keyframes showerFall { 0% { transform: scale(0.5); opacity: 0; } 20% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1) translateY(-120px); opacity: 0; } }
         canvas { position: fixed; top: 0; left: 0; pointer-events: none; z-index: 2100; }
