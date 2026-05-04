@@ -768,9 +768,10 @@ try {
                 : `${hours}時間 ${mins}分 ${String(secs).padStart(2,'0')}秒`;
 
         const beforeCount = taskList.filter(t => {
-            if (t.isMain && t.date && t.time && new Date(`${t.date}T${t.time}`).getTime() === targetDt.getTime()) return false;
-            if (!t.date || !t.time) return true;
-            return new Date(`${t.date}T${t.time}`) < targetDt;
+            if (!t.date || !t.time) return false;
+            const dt = new Date(`${t.date}T${t.time}`);
+            if (dt.getTime() === targetDt.getTime()) return false;
+            return dt < targetDt;
         }).length;
         document.getElementById('countdown-tasks').textContent =
             beforeCount > 0 ? `📋 それまでにやること ${beforeCount}件` : '';
