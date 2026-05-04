@@ -311,10 +311,6 @@ try {
 
     // ─── タスク完了 ──────────────────────────────────────────────────────
     function completeTask(idx) {
-        if (imageCollection.length === 0) {
-            alert("画像を登録してね！");
-            return;
-        }
         // [FIX #13] 誤タップ防止の確認ダイアログ
         const taskName = taskList[idx] ? taskList[idx].text : '';
         if (!confirm(`「${taskName}」を完了にしますか？`)) return;
