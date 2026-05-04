@@ -470,6 +470,13 @@ try {
         const files = Array.from(e.target.files || []);
         if (files.length === 0) return; // [FIX #4] キャンセル時は何もしない
 
+        const MAX_IMAGES = 10;
+        if (imageCollection.length >= MAX_IMAGES) {
+            alert(`画像は最大${MAX_IMAGES}枚までです。\n追加するには既存の画像を削除してください。`);
+            fileInput.value = '';
+            return;
+        }
+
         const MAX_W  = 400;
         const MAX_H  = 400;
         const MAX_KB = 200; // 1枚あたりの最大KB
@@ -512,7 +519,11 @@ try {
                     dataUrl = canvas.toDataURL('image/jpeg', quality);
                 }
 
-                imageCollection.push(dataUrl);
+                if (imageCollection.length < MAX_IMAGES) {
+                    imageCollection.push(dataUrl);
+                } else if (processed === 0) {
+                    alert(`画像は最大${MAX_IMAGES}枚までです。上限に達したため追加できませんでした。`);
+                }
                 processed++;
                 if (processed === files.length) {
                     imgLoading.style.display = 'none';
