@@ -516,7 +516,7 @@ try {
         if (hasDate && hasTime) {
             const inputDateTime = new Date(`${dateInput.value}T${timeInput.value}`);
             if (inputDateTime < new Date()) {
-                if (!confirm('⚠️ 過去の日時です。通知は届きません。このまま登録しますか？')) return;
+                if (!confirm('⚠️ 過去の日時のため再通知設定ができません。メモとして登録しますか？')) return;
             }
         }
 
