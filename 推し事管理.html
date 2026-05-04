@@ -109,7 +109,7 @@
 
         /* カウントダウンエリア */
         #countdown-area { width: 100%; max-width: 900px; padding: 10px 20px 0; box-sizing: border-box; }
-        .countdown-card { background: linear-gradient(135deg, #e05a7a, #ff9a9a); color: white; border-radius: 15px; padding: 18px 24px; text-align: center; box-shadow: 0 5px 20px rgba(224,90,122,0.35); }
+        .countdown-card { background: linear-gradient(135deg, #e05a7a, #ff9a9a); color: white; border-radius: 15px; padding: 18px 24px; text-align: center; box-shadow: 0 5px 20px rgba(0,0,0,0.2); transition: background 0.5s; }
         #countdown-label { font-size: 0.95rem; font-weight: bold; margin-bottom: 6px; opacity: 0.92; }
         #countdown-timer { font-size: 2rem; font-weight: bold; letter-spacing: 3px; line-height: 1; }
         #countdown-tasks { font-size: 0.82rem; margin-top: 8px; opacity: 0.88; }
@@ -746,15 +746,26 @@ try {
         countdownTarget = candidates[0];
         area.style.display = 'block';
 
+        // 推し色をカードに反映
+        const oshi = (countdownTarget.oshiIdx != null && countdownTarget.oshiIdx >= 0 && countdownTarget.oshiIdx < oshiList.length)
+            ? oshiList[countdownTarget.oshiIdx] : null;
+        const baseColor = oshi ? oshi.color : '#e05a7a';
+        const card = document.querySelector('.countdown-card');
+        card.style.background = `linear-gradient(135deg, ${baseColor}, ${baseColor}bb)`;
+        card.style.boxShadow  = `0 5px 20px ${baseColor}66`;
+
         const targetDt = countdownTarget.dt;
         const diff = targetDt - now;
         const days  = Math.floor(diff / 86400000);
         const hours = Math.floor((diff % 86400000) / 3600000);
         const mins  = Math.floor((diff % 3600000) / 60000);
+        const secs  = Math.floor((diff % 60000) / 1000);
 
         document.getElementById('countdown-label').textContent = `🎯 ${countdownTarget.text}まで`;
         document.getElementById('countdown-timer').textContent =
-            days > 0 ? `${days}日 ${hours}時間 ${mins}分` : `${hours}時間 ${mins}分`;
+            days > 0
+                ? `${days}日 ${hours}時間 ${mins}分 ${String(secs).padStart(2,'0')}秒`
+                : `${hours}時間 ${mins}分 ${String(secs).padStart(2,'0')}秒`;
 
         const beforeCount = taskList.filter(t => {
             if (!t.date || !t.time) return false;
