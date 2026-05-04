@@ -67,6 +67,10 @@
         .archive-delete-note { font-size: 9px; color: #333; text-align: center; }
         .completed-at { font-size: 10px; color: #bbb; margin-top: 2px; }
 
+        /* データ管理ボタン */
+        .data-mgmt-btn { background: #555; color: white; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: bold; }
+        .data-mgmt-btn:hover { background: #333; }
+
         /* 背景色カスタマイズ */
         .color-swatches { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
         .color-swatch { width: 28px; height: 28px; border-radius: 50%; cursor: pointer; border: 2px solid #ddd; transition: transform 0.15s, border-color 0.15s; flex-shrink: 0; }
@@ -149,6 +153,14 @@
                         <button class="phrase-add-btn" onclick="addPhrase('remind')">登録</button>
                     </div>
                     <ul id="remind-phrase-list" class="phrase-list"></ul>
+                </div>
+            </div>
+            <div style="margin-top:24px; border-top:1px solid #eee; padding-top:16px;">
+                <label style="font-weight:bold; font-size:14px;">💾 データ管理</label>
+                <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
+                    <button onclick="exportData()" class="data-mgmt-btn">📤 データを書き出す</button>
+                    <button onclick="document.getElementById('import-file-input').click()" class="data-mgmt-btn">📥 データを読み込む</button>
+                    <input type="file" id="import-file-input" accept=".json" style="display:none;">
                 </div>
             </div>
         </div>
@@ -247,6 +259,59 @@ try {
     // [FIX #11] iOS対応: mousedown + touchstart 両方で初期化
     document.body.addEventListener('mousedown',  initAudio, { once: true });
     document.body.addEventListener('touchstart', initAudio, { once: true });
+
+    // ─── エクスポート/インポート ──────────────────────────────────────────
+    function exportData() {
+        const payload = {
+            tasks:    taskList,
+            archived: archivedTasks,
+            praises:  praiseList.join(','),
+            reminds:  remindList.join(','),
+            images:   imageCollection,
+            bgcolor:  localStorage.getItem('oshigoto_bgcolor') || '#f8f9fa'
+        };
+        const json = JSON.stringify(payload, null, 2);
+        const date = new Date().toLocaleDateString('sv-SE');
+        const blob = new Blob([json], { type: 'application/json' });
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        a.href     = url;
+        a.download = `oshigoto_backup_${date}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    document.getElementById('import-file-input').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        if (!confirm('現在のデータをこのファイルで上書きしますか？\nこの操作は取り消せません。')) {
+            e.target.value = '';
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            try {
+                const data      = JSON.parse(ev.target.result);
+                taskList        = data.tasks    || [];
+                archivedTasks   = data.archived || [];
+                praiseList      = (data.praises || "天才！,最高！,さすが！").split(',').map(s => s.trim()).filter(Boolean);
+                remindList      = (data.reminds || "時間だよー！,頑張ろう！").split(',').map(s => s.trim()).filter(Boolean);
+                imageCollection = data.images   || [];
+                saveData();
+                if (data.bgcolor) setBgColor(data.bgcolor);
+                renderCollection();
+                renderTasks();
+                renderArchive();
+                renderPhraseList('praise');
+                renderPhraseList('remind');
+                alert('データを読み込みました。');
+            } catch (err) {
+                alert('ファイルの読み込みに失敗しました。\n正しいバックアップファイルか確認してください。');
+            }
+            e.target.value = '';
+        };
+        reader.readAsText(file);
+    });
 
     // ─── 背景色 ──────────────────────────────────────────────────────────
     function setBgColor(color) {
