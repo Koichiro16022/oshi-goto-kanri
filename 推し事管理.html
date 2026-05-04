@@ -84,7 +84,10 @@
                 <input type="text" id="remind-input" value="時間だよー！,忘れてない？,今から頑張ろう！">
             </div>
             <!-- [FIX #18] データ初期化に確認ダイアログを追加 -->
-            <button onclick="confirmReset()" style="margin-top:20px; font-size:10px; background:none; border:1px solid #ccc; cursor:pointer;">データを初期化する(復旧用)</button>
+            <div style="margin-top:20px; display:flex; gap:8px; flex-wrap:wrap;">
+                <button onclick="resetImages()" style="font-size:10px; background:none; border:1px solid #ccc; cursor:pointer; padding:5px 10px; border-radius:6px;">🖼️ 画像だけリセット</button>
+                <button onclick="resetTasks()" style="font-size:10px; background:none; border:1px solid #ccc; cursor:pointer; padding:5px 10px; border-radius:6px;">📋 タスクだけリセット</button>
+            </div>
         </div>
     </div>
 
@@ -581,11 +584,23 @@ try {
 
     // ─── データ初期化 ────────────────────────────────────────────────────
     // [FIX #18] 確認ダイアログを追加
-    function confirmReset() {
-        if (confirm('⚠️ すべてのデータを初期化しますか？\nこの操作は取り消せません。')) {
-            localStorage.clear();
-            location.reload();
-        }
+    function resetImages() {
+        if (!confirm('⚠️ 登録した推し画像をすべて削除しますか？\nタスクは消えません。この操作は取り消せません。')) return;
+        imageCollection = [];
+        saveData();
+        renderCollection();
+    }
+
+    function resetTasks() {
+        if (!confirm('⚠️ タスクとアーカイブをすべて削除しますか？\n画像は消えません。この操作は取り消せません。')) return;
+        taskList = [];
+        archivedTasks = [];
+        editIndex = -1;
+        addBtn.textContent = "タスクを追加";
+        addBtn.classList.remove('edit-mode');
+        saveData();
+        renderTasks();
+        renderArchive();
     }
 
     // ─── データ読み込み ──────────────────────────────────────────────────
