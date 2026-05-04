@@ -797,10 +797,18 @@ try {
         const text = todoInput.value.trim();
         if (!text) return;
 
-        // [FIX #15] 日付と時刻の片方だけ入力されていたら警告
+        // 日付と時刻の入力チェック
+        // メインイベントは両方必須。通常タスクは時刻なし（日付のみ or 両方なし）を許可
         const hasDate = !!dateInput.value;
         const hasTime = !!timeInput.value;
-        if ((hasDate && !hasTime) || (!hasDate && hasTime)) {
+        const isMainEvt = mainEventInput.checked;
+        if (!hasDate && hasTime) {
+            datetimeWarn.textContent = '⚠️ 時刻を設定する場合は日付も入力してください';
+            datetimeWarn.style.display = 'block';
+            return;
+        }
+        if (isMainEvt && hasDate && !hasTime) {
+            datetimeWarn.textContent = '⚠️ メインイベントには日付と時刻の両方を入力してください';
             datetimeWarn.style.display = 'block';
             return;
         }
