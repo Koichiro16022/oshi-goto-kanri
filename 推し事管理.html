@@ -271,12 +271,14 @@ try {
             bgcolor:  localStorage.getItem('oshigoto_bgcolor') || '#f8f9fa'
         };
         const json = JSON.stringify(payload, null, 2);
-        const date = new Date().toLocaleDateString('sv-SE');
+        const now  = new Date();
+        const pad  = n => String(n).padStart(2, '0');
+        const stamp = `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}`;
         const blob = new Blob([json], { type: 'application/json' });
         const url  = URL.createObjectURL(blob);
         const a    = document.createElement('a');
         a.href     = url;
-        a.download = `oshigoto_backup_${date}.json`;
+        a.download = `oshigoto_backup_${stamp}.json`;
         a.click();
         URL.revokeObjectURL(url);
     }
