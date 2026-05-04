@@ -749,7 +749,7 @@ try {
         // 推し色をカードに反映
         const oshi = (countdownTarget.oshiIdx != null && countdownTarget.oshiIdx >= 0 && countdownTarget.oshiIdx < oshiList.length)
             ? oshiList[countdownTarget.oshiIdx] : null;
-        const baseColor = oshi ? oshi.color : '#e05a7a';
+        const baseColor = oshi ? oshi.color : '#AAAAAA';
         const card = document.querySelector('.countdown-card');
         card.style.background = `linear-gradient(135deg, ${baseColor}, ${baseColor}bb)`;
         card.style.boxShadow  = `0 5px 20px ${baseColor}66`;
