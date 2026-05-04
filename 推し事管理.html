@@ -769,12 +769,9 @@ try {
 
         const targetDate = countdownTarget.date;
         const beforeCount = taskList.filter(t => {
+            if (t.isMain) return false;
             if (!t.date) return false;
-            if (t.time) {
-                const dt = new Date(`${t.date}T${t.time}`);
-                if (dt.getTime() === targetDt.getTime()) return false;
-                return dt < targetDt;
-            }
+            if (t.time) return new Date(`${t.date}T${t.time}`) < targetDt;
             return t.date <= targetDate;
         }).length;
         document.getElementById('countdown-tasks').textContent =
