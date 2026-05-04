@@ -86,6 +86,13 @@
         #bg-color-input { width: 36px; height: 30px; padding: 2px; border: 1px solid #ddd; border-radius: 6px; cursor: pointer; }
 
         /* セリフ管理UI */
+        /* 推し管理 */
+        .oshi-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: #f9f9f9; border-radius: 10px; margin-bottom: 6px; }
+        .oshi-color-dot { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #ddd; flex-shrink: 0; }
+        .oshi-name { flex: 1; font-size: 13px; font-weight: bold; }
+        .oshi-main-btn { background: #f0c040; color: #333; border: none; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: bold; white-space: nowrap; }
+        .oshi-delete-btn { background: #888; color: white; border: none; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: bold; white-space: nowrap; }
+
         .phrase-section-header { display: flex; align-items: center; gap: 10px; }
         .phrase-section-header label { flex: 1; margin: 0; }
         .toggle-phrase-btn { background: #888; color: white; border: none; padding: 6px 14px; border-radius: 15px; cursor: pointer; font-size: 12px; font-weight: bold; white-space: nowrap; }
@@ -110,6 +117,15 @@
 <div class="main-wrapper">
     <div class="left-column" id="settings-area">
         <div class="panel">
+            <div style="border-bottom:1px solid #eee; padding-bottom:20px; margin-bottom:20px;">
+                <label style="font-weight:bold; font-size:14px;">👑 推し管理 <span style="font-weight:normal; font-size:12px; color:#999;">（最大5人）</span></label>
+                <div class="phrase-input-row" style="margin-top:10px;">
+                    <input type="text" id="oshi-name-input" placeholder="推しの名前" style="flex:1; margin-top:0;">
+                    <input type="color" id="oshi-color-input" value="#ff6b6b" style="width:42px; height:42px; padding:2px; border:1px solid #ddd; border-radius:6px; cursor:pointer; margin-top:0; flex-shrink:0;">
+                    <button id="oshi-add-btn" class="phrase-add-btn" onclick="addOshi()">追加</button>
+                </div>
+                <div id="oshi-list" style="margin-top:10px;"></div>
+            </div>
             <label style="font-weight:bold; font-size:14px;">📸 推し画像コレクション<span style="font-weight:normal; font-size:12px; color:#999;">（10枚まで保存できます）</span></label>
             <!-- [FIX #20] multiple属性を追加して複数選択に対応 -->
             <input type="file" accept="image/*" id="file-input" multiple style="margin-top:10px;">
@@ -389,6 +405,75 @@ try {
             s.classList.toggle('active', s.dataset.color === color);
         });
         localStorage.setItem('oshigoto_bgcolor', color);
+    }
+
+    // ─── 推し管理 ────────────────────────────────────────────────────────
+    let oshiList       = [];
+    let mainOshiIndex  = 0;
+
+    function saveOshiData() {
+        localStorage.setItem('oshigoto_oshi', JSON.stringify({ list: oshiList, main: mainOshiIndex }));
+    }
+
+    function addOshi() {
+        const nameInput  = document.getElementById('oshi-name-input');
+        const colorInput = document.getElementById('oshi-color-input');
+        const name = nameInput.value.trim();
+        if (!name) { alert('推しの名前を入力してください。'); return; }
+        if (oshiList.length >= 5) { alert('推しは最大5人まで登録できます。'); return; }
+        oshiList.push({ name, color: colorInput.value });
+        nameInput.value = '';
+        saveOshiData();
+        renderOshiList();
+    }
+
+    function deleteOshi(idx) {
+        if (!confirm(`「${oshiList[idx].name}」を削除しますか？`)) return;
+        oshiList.splice(idx, 1);
+        if (mainOshiIndex >= oshiList.length) mainOshiIndex = 0;
+        else if (mainOshiIndex > idx) mainOshiIndex--;
+        saveOshiData();
+        renderOshiList();
+    }
+
+    function setMainOshi(idx) {
+        mainOshiIndex = idx;
+        saveOshiData();
+        renderOshiList();
+    }
+
+    function renderOshiList() {
+        const container = document.getElementById('oshi-list');
+        const addBtn    = document.getElementById('oshi-add-btn');
+        if (addBtn) {
+            addBtn.disabled     = oshiList.length >= 5;
+            addBtn.style.opacity = oshiList.length >= 5 ? '0.4' : '1';
+        }
+        container.innerHTML = '';
+        if (oshiList.length === 0) {
+            container.innerHTML = '<div style="font-size:12px; color:#bbb; text-align:center; padding:8px;">推しを登録してください</div>';
+            return;
+        }
+        oshiList.forEach((oshi, idx) => {
+            const isMain = idx === mainOshiIndex;
+            const div = document.createElement('div');
+            div.className = 'oshi-item';
+            div.innerHTML = `
+                <span style="font-size:16px;">${isMain ? '★' : '☆'}</span>
+                <div class="oshi-color-dot" style="background:${escapeHtml(oshi.color)};"></div>
+                <span class="oshi-name">${escapeHtml(oshi.name)}</span>
+                ${isMain
+                    ? '<span style="font-size:11px; color:#c8a000; font-weight:bold; white-space:nowrap;">メイン推し</span>'
+                    : `<button class="oshi-main-btn" data-idx="${idx}">メイン</button>`}
+                <button class="oshi-delete-btn" data-idx="${idx}">削除</button>`;
+            container.appendChild(div);
+        });
+        container.querySelectorAll('.oshi-main-btn').forEach(btn => {
+            btn.addEventListener('click', () => setMainOshi(parseInt(btn.dataset.idx)));
+        });
+        container.querySelectorAll('.oshi-delete-btn').forEach(btn => {
+            btn.addEventListener('click', () => deleteOshi(parseInt(btn.dataset.idx)));
+        });
     }
 
     // ─── 設定パネル開閉 ──────────────────────────────────────────────────
@@ -1025,6 +1110,12 @@ try {
     todoInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') addBtn.click(); });
     document.getElementById('praise-new-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') addPhrase('praise'); });
     document.getElementById('remind-new-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') addPhrase('remind'); });
+
+    // 推し管理の読み込み
+    const savedOshi = localStorage.getItem('oshigoto_oshi');
+    if (savedOshi) { try { const d = JSON.parse(savedOshi); oshiList = d.list || []; mainOshiIndex = d.main || 0; } catch(e) {} }
+    renderOshiList();
+    document.getElementById('oshi-name-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') addOshi(); });
 
     // おやすみモードの読み込みと時刻変更保存
     const savedQuiet = localStorage.getItem('oshigoto_quietmode');
