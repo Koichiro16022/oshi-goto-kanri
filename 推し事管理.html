@@ -758,13 +758,20 @@ try {
             const max       = task.maxNotify || 0;
             const count     = task.notifyCount || 0;
             if (max > 0 && count >= max) return; // 上限到達済みはスキップ
-            const isInitial = (task.date === nowStrDate && task.time === nowStrTime);
-            const isRepeat  = (
+            const isInitial  = (task.date === nowStrDate && task.time === nowStrTime);
+            const isRepeat   = (
                 task.interval > 0 &&
                 task.lastNotified !== null &&
                 (nowTotal - task.lastNotified) >= task.interval
             );
-            if ((isInitial || isRepeat) && task.lastNotified !== nowTotal) {
+            // おやすみモード中にスキップされた通知を終了後に発火する
+            const taskDateTime = new Date(`${task.date}T${task.time}`);
+            const isMissed   = (
+                task.interval > 0 &&
+                task.lastNotified === null &&
+                taskDateTime < now
+            );
+            if ((isInitial || isRepeat || isMissed) && task.lastNotified !== nowTotal) {
                 task.lastNotified = nowTotal;
                 task.notifyCount  = count + 1;
                 if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
