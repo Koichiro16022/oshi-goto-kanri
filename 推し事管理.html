@@ -570,6 +570,8 @@ try {
         todoList.querySelectorAll('.delete-task-btn').forEach(btn => {
             btn.addEventListener('click', () => deleteTask(parseInt(btn.dataset.idx)));
         });
+
+        document.title = taskList.length > 0 ? `(${taskList.length}) 推し事管理` : '推し事管理';
     }
 
     function deleteTask(idx) {
