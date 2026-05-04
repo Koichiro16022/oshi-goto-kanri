@@ -35,6 +35,7 @@
         .complete-btn { background: #4caf50; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 12px; }
         .edit-task-btn { background: var(--edit-color); color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 12px; }
         .delete-task-btn { background: #888; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 12px; }
+        .notify-done-badge { font-size: 10px; color: #fff; background: #bbb; border-radius: 10px; padding: 2px 7px; margin-top: 3px; display: inline-block; }
 
         /* [FIX #19] オーバーレイはクリックで閉じられるようにpointer-eventsを有効化 */
         #praise-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 2000; cursor: pointer; }
@@ -178,6 +179,7 @@
             <div class="row-group">
                 <label>🔁 再通知:</label>
                 <select id="interval-input">
+
                     <option value="0">なし</option>
                     <option value="5">5分ごと</option>
                     <option value="10">10分ごと</option>
@@ -188,6 +190,15 @@
                     <option value="360">6時間ごと</option>
                     <option value="720">12時間ごと</option>
                     <option value="1440">1日ごと</option>
+                </select>
+            </div>
+            <div class="row-group">
+                <label>🔔 再通知の上限:</label>
+                <select id="max-notify-input">
+                    <option value="0">無制限</option>
+                    <option value="3">3回</option>
+                    <option value="5">5回</option>
+                    <option value="10">10回</option>
                 </select>
             </div>
             <input type="text" id="todo-input" placeholder="次のお仕事（推し事）は何？">
@@ -213,6 +224,7 @@ try {
     const dateInput       = document.getElementById('date-input');
     const timeInput       = document.getElementById('time-input');
     const intervalInput   = document.getElementById('interval-input');
+    const maxNotifyInput  = document.getElementById('max-notify-input');
     const addBtn          = document.getElementById('add-btn');
     const todoList        = document.getElementById('todo-list');
     const collectionContainer = document.getElementById('collection-container');
@@ -457,10 +469,12 @@ try {
         taskList.forEach((task, idx) => {
             const li = document.createElement('li');
             // [FIX #5] task.textをescapeHtmlで安全化
+            const notifyDone = task.maxNotify > 0 && (task.notifyCount || 0) >= task.maxNotify;
             li.innerHTML = `
                 <div style="flex:1">
                     <div style="font-size:11px; color:#999">${escapeHtml(task.date || '')} ${escapeHtml(task.time || '')}</div>
                     <div style="font-weight:bold;">${escapeHtml(task.text)}</div>
+                    ${notifyDone ? '<span class="notify-done-badge">🔕 通知終了</span>' : ''}
                 </div>
                 <div class="btn-group">
                     <button class="edit-task-btn" data-idx="${idx}">修正</button>
@@ -525,6 +539,8 @@ try {
             date:         dateInput.value,
             time:         timeInput.value,
             interval:     parseInt(intervalInput.value),
+            maxNotify:    parseInt(maxNotifyInput.value),
+            notifyCount:  0,
             lastNotified: null
         };
 
@@ -541,6 +557,7 @@ try {
         dateInput.value = '';
         timeInput.value = '';
         intervalInput.value = "0";
+        maxNotifyInput.value = "0";
         saveData();
         renderTasks();
     });
@@ -551,8 +568,9 @@ try {
         todoInput.value    = task.text;
         dateInput.value    = task.date;
         timeInput.value    = task.time;
-        intervalInput.value = task.interval || "0";
-        editIndex          = idx;
+        intervalInput.value  = task.interval  || "0";
+        maxNotifyInput.value = task.maxNotify || "0";
+        editIndex            = idx;
         addBtn.textContent = "修正を保存する";
         addBtn.classList.add('edit-mode');
         todoInput.focus();
@@ -673,6 +691,9 @@ try {
 
         taskList.forEach(task => {
             if (!task.date || !task.time) return;
+            const max       = task.maxNotify || 0;
+            const count     = task.notifyCount || 0;
+            if (max > 0 && count >= max) return; // 上限到達済みはスキップ
             const isInitial = (task.date === nowStrDate && task.time === nowStrTime);
             const isRepeat  = (
                 task.interval > 0 &&
@@ -681,11 +702,12 @@ try {
             );
             if ((isInitial || isRepeat) && task.lastNotified !== nowTotal) {
                 task.lastNotified = nowTotal;
+                task.notifyCount  = count + 1;
                 if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
                 playBeep();
-                // [FIX #7] 画像がなくてもリマインダーは表示するが、画像なし対応
                 showShowerEffect(remindList.join(','), `時間だよ！「${task.text}」！`);
                 saveData();
+                if (max > 0 && task.notifyCount >= max) renderTasks(); // 上限到達時にバッジ表示
             }
         });
     }, 5000);
