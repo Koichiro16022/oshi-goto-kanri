@@ -119,9 +119,20 @@
         <div class="panel">
             <div style="border-bottom:1px solid #eee; padding-bottom:20px; margin-bottom:20px;">
                 <label style="font-weight:bold; font-size:14px;">👑 推し管理 <span style="font-weight:normal; font-size:12px; color:#999;">（最大5人）</span></label>
-                <div class="phrase-input-row" style="margin-top:10px;">
+                <div class="color-swatches" style="margin-top:10px;">
+                    <div class="color-swatch" style="background:#888888;" title="グレー"  onclick="setOshiColor('#888888')"></div>
+                    <div class="color-swatch" style="background:#e53935;" title="赤"      onclick="setOshiColor('#e53935')"></div>
+                    <div class="color-swatch" style="background:#e91e63;" title="ピンク"  onclick="setOshiColor('#e91e63')"></div>
+                    <div class="color-swatch" style="background:#f57c00;" title="オレンジ" onclick="setOshiColor('#f57c00')"></div>
+                    <div class="color-swatch" style="background:#f9a825;" title="黄色"    onclick="setOshiColor('#f9a825')"></div>
+                    <div class="color-swatch" style="background:#43a047;" title="緑"      onclick="setOshiColor('#43a047')"></div>
+                    <div class="color-swatch" style="background:#039be5;" title="水色"    onclick="setOshiColor('#039be5')"></div>
+                    <div class="color-swatch" style="background:#1e88e5;" title="青"      onclick="setOshiColor('#1e88e5')"></div>
+                    <div class="color-swatch" style="background:#8e24aa;" title="紫"      onclick="setOshiColor('#8e24aa')"></div>
+                </div>
+                <div class="phrase-input-row" style="margin-top:8px;">
                     <input type="text" id="oshi-name-input" placeholder="推しの名前" style="flex:1; margin-top:0;">
-                    <input type="color" id="oshi-color-input" value="#ff6b6b" style="width:42px; height:42px; padding:2px; border:1px solid #ddd; border-radius:6px; cursor:pointer; margin-top:0; flex-shrink:0;">
+                    <input type="color" id="oshi-color-input" value="#e91e63" style="width:42px; height:42px; padding:2px; border:1px solid #ddd; border-radius:6px; cursor:pointer; margin-top:0; flex-shrink:0;">
                     <button id="oshi-add-btn" class="phrase-add-btn" onclick="addOshi()">追加</button>
                 </div>
                 <div id="oshi-list" style="margin-top:10px;"></div>
@@ -410,6 +421,10 @@ try {
     // ─── 推し管理 ────────────────────────────────────────────────────────
     let oshiList       = [];
     let mainOshiIndex  = 0;
+
+    function setOshiColor(color) {
+        document.getElementById('oshi-color-input').value = color;
+    }
 
     function saveOshiData() {
         localStorage.setItem('oshigoto_oshi', JSON.stringify({ list: oshiList, main: mainOshiIndex }));
