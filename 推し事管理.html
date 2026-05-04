@@ -67,6 +67,14 @@
         .archive-delete-note { font-size: 9px; color: #333; text-align: center; }
         .completed-at { font-size: 10px; color: #bbb; margin-top: 2px; }
 
+        /* 背景色カスタマイズ */
+        .color-swatches { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+        .color-swatch { width: 28px; height: 28px; border-radius: 50%; cursor: pointer; border: 2px solid #ddd; transition: transform 0.15s, border-color 0.15s; flex-shrink: 0; }
+        .color-swatch:hover { transform: scale(1.2); }
+        .color-swatch.active { border-color: #555; box-shadow: 0 0 0 2px #555; transform: scale(1.1); }
+        .bg-color-row { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+        #bg-color-input { width: 36px; height: 30px; padding: 2px; border: 1px solid #ddd; border-radius: 6px; cursor: pointer; }
+
         /* セリフ管理UI */
         .phrase-section-header { display: flex; align-items: center; gap: 10px; }
         .phrase-section-header label { flex: 1; margin: 0; }
@@ -98,6 +106,24 @@
             <div id="collection-container"></div>
             <div style="margin-top:12px;">
                 <button onclick="resetImages()" style="font-size:10px; background:none; border:1px solid #ccc; cursor:pointer; padding:5px 10px; border-radius:6px;">🖼️ 画像を一括リセット</button>
+            </div>
+            <div style="margin-top:20px;">
+                <label style="font-weight:bold; font-size:14px;">🎨 背景色</label>
+                <div class="color-swatches">
+                    <div class="color-swatch" data-color="#f8f9fa" title="デフォルト" style="background:#f8f9fa;"></div>
+                    <div class="color-swatch" data-color="#ffffff" title="白" style="background:#ffffff;"></div>
+                    <div class="color-swatch" data-color="#ffe0e0" title="赤" style="background:#ffe0e0;"></div>
+                    <div class="color-swatch" data-color="#ffe0f0" title="ピンク" style="background:#ffe0f0;"></div>
+                    <div class="color-swatch" data-color="#fff0e0" title="オレンジ" style="background:#fff0e0;"></div>
+                    <div class="color-swatch" data-color="#fffde0" title="黄色" style="background:#fffde0;"></div>
+                    <div class="color-swatch" data-color="#e0ffe0" title="緑" style="background:#e0ffe0;"></div>
+                    <div class="color-swatch" data-color="#e0eeff" title="青" style="background:#e0eeff;"></div>
+                    <div class="color-swatch" data-color="#f0e0ff" title="紫" style="background:#f0e0ff;"></div>
+                </div>
+                <div class="bg-color-row">
+                    <label style="font-size:12px; color:#666;">カスタム:</label>
+                    <input type="color" id="bg-color-input" value="#f8f9fa">
+                </div>
             </div>
             <div style="margin-top:20px;">
                 <div class="phrase-section-header">
@@ -215,6 +241,17 @@ try {
     // [FIX #11] iOS対応: mousedown + touchstart 両方で初期化
     document.body.addEventListener('mousedown',  initAudio, { once: true });
     document.body.addEventListener('touchstart', initAudio, { once: true });
+
+    // ─── 背景色 ──────────────────────────────────────────────────────────
+    function setBgColor(color) {
+        document.body.style.backgroundColor = color;
+        const picker = document.getElementById('bg-color-input');
+        if (picker) picker.value = color;
+        document.querySelectorAll('.color-swatch').forEach(s => {
+            s.classList.toggle('active', s.dataset.color === color);
+        });
+        localStorage.setItem('oshigoto_bgcolor', color);
+    }
 
     // ─── 設定パネル開閉 ──────────────────────────────────────────────────
     function toggleSettings() {
@@ -775,6 +812,14 @@ try {
 
         renderPhraseList('praise');
         renderPhraseList('remind');
+
+        const savedBgColor = localStorage.getItem('oshigoto_bgcolor') || '#f8f9fa';
+        setBgColor(savedBgColor);
+
+        document.querySelectorAll('.color-swatch').forEach(swatch => {
+            swatch.addEventListener('click', () => setBgColor(swatch.dataset.color));
+        });
+        document.getElementById('bg-color-input').addEventListener('input', (e) => setBgColor(e.target.value));
 
         // [FIX #12] CanvasサイズをアニメーションONの前に確実に設定
         canvas.width  = window.innerWidth;
