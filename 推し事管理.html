@@ -549,6 +549,7 @@ try {
         const container = document.getElementById('oshi-list');
         const div = container.querySelector(`.oshi-item[data-idx="${idx}"]`);
         const oshi = oshiList[idx];
+        const originalColor = oshi.color;
         const swatchesHtml = OSHI_PRESET_COLORS.map(c =>
             `<div class="color-swatch" style="background:${c.color};" title="${c.label}" data-color="${c.color}"></div>`
         ).join('');
@@ -560,15 +561,24 @@ try {
             <button class="phrase-edit-btn" data-idx="${idx}">保存</button>
             <button class="oshi-delete-btn" data-idx="${idx}">取消</button>
             <div class="color-swatches oshi-swatches" style="width:100%; margin:6px 0 0 0;">${swatchesHtml}</div>`;
-        div.querySelector('.phrase-edit-btn').addEventListener('click', () => saveOshiEdit(idx));
-        div.querySelector('.oshi-delete-btn').addEventListener('click', () => renderOshiList());
+
         const colorInput = div.querySelector(`#oshi-edit-color-${idx}`);
-        colorInput.addEventListener('input', (e) => {
-            const c = e.target.value;
+
+        function applyColorPreview(c) {
             document.getElementById(`oshi-edit-dot-${idx}`).style.background = c;
-            document.querySelectorAll(`#todo-list li[data-oshi-idx="${idx}"]`).forEach(li => {
+            oshiList[idx].color = c;
+            todoList.querySelectorAll(`li[data-oshi-idx="${idx}"]`).forEach(li => {
                 li.style.borderLeftColor = c;
             });
+        }
+
+        colorInput.addEventListener('input', (e) => applyColorPreview(e.target.value));
+
+        div.querySelector('.phrase-edit-btn').addEventListener('click', () => saveOshiEdit(idx));
+        div.querySelector('.oshi-delete-btn').addEventListener('click', () => {
+            oshiList[idx].color = originalColor;
+            renderOshiList();
+            renderTaskList();
         });
         div.querySelector(`#oshi-edit-name-${idx}`).addEventListener('keydown', (e) => {
             if (e.key === 'Enter') saveOshiEdit(idx);
@@ -577,17 +587,15 @@ try {
             swatch.addEventListener('click', () => {
                 const c = swatch.dataset.color;
                 colorInput.value = c;
-                document.getElementById(`oshi-edit-dot-${idx}`).style.background = c;
+                applyColorPreview(c);
             });
         });
     }
 
     function saveOshiEdit(idx) {
-        const name  = document.getElementById(`oshi-edit-name-${idx}`).value.trim();
-        const color = document.getElementById(`oshi-edit-color-${idx}`).value;
+        const name = document.getElementById(`oshi-edit-name-${idx}`).value.trim();
         if (!name) { alert('推しの名前を入力してください'); return; }
-        oshiList[idx].name  = name;
-        oshiList[idx].color = color;
+        oshiList[idx].name = name;
         saveOshiData();
         renderOshiList();
         renderTaskList();
