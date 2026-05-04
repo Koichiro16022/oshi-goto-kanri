@@ -97,11 +97,11 @@
             <div id="img-loading">📷 画像を処理中...</div>
             <div id="collection-container"></div>
             <div style="margin-top:12px;">
-                <button onclick="resetImages()" style="font-size:10px; background:none; border:1px solid #ccc; cursor:pointer; padding:5px 10px; border-radius:6px;">🖼️ 画像をリセット</button>
+                <button onclick="resetImages()" style="font-size:10px; background:none; border:1px solid #ccc; cursor:pointer; padding:5px 10px; border-radius:6px;">🖼️ 画像を一括リセット</button>
             </div>
             <div style="margin-top:20px;">
                 <div class="phrase-section-header">
-                    <label style="font-weight:bold; font-size:14px;">💬 褒め言葉 <span id="praise-count" style="font-weight:normal; font-size:12px; color:#999;"></span></label>
+                    <label style="font-weight:bold; font-size:14px;">💬 褒め言葉 <span style="font-weight:normal; font-size:12px; color:#999;">（20個まで保存できます）</span></label>
                     <button class="toggle-phrase-btn" id="toggle-praise-btn" onclick="togglePhrase('praise')">▼ 表示</button>
                 </div>
                 <div id="praise-phrase-body" style="display:none;">
@@ -114,7 +114,7 @@
             </div>
             <div style="margin-top:16px;">
                 <div class="phrase-section-header">
-                    <label style="font-weight:bold; font-size:14px;">⏰ リマインダーセリフ <span id="remind-count" style="font-weight:normal; font-size:12px; color:#999;"></span></label>
+                    <label style="font-weight:bold; font-size:14px;">⏰ リマインダーセリフ <span style="font-weight:normal; font-size:12px; color:#999;">（20個まで保存できます）</span></label>
                     <button class="toggle-phrase-btn" id="toggle-remind-btn" onclick="togglePhrase('remind')">▼ 表示</button>
                 </div>
                 <div id="remind-phrase-body" style="display:none;">
@@ -270,8 +270,6 @@ try {
         const MAX_PHRASES = 20;
         const list  = getList(type);
         const ul    = document.getElementById(`${type}-phrase-list`);
-        const count = document.getElementById(`${type}-count`);
-        if (count) count.textContent = `(${list.length} / ${MAX_PHRASES})`;
         const addBtn2 = document.querySelector(`#${type}-phrase-body .phrase-add-btn`);
         if (addBtn2) {
             addBtn2.disabled = list.length >= MAX_PHRASES;
