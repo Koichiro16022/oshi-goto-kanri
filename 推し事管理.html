@@ -565,6 +565,11 @@ try {
             div.appendChild(span);
             collectionContainer.appendChild(div);
         });
+
+        const isFull = imageCollection.length >= 10;
+        fileInput.disabled = isFull;
+        fileInput.style.opacity = isFull ? '0.4' : '1';
+        fileInput.style.cursor  = isFull ? 'not-allowed' : '';
     }
 
     function deleteImage(idx) {
