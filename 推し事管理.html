@@ -67,6 +67,9 @@
         .completed-at { font-size: 10px; color: #bbb; margin-top: 2px; }
 
         /* セリフ管理UI */
+        .phrase-section-header { display: flex; align-items: center; gap: 10px; }
+        .phrase-section-header label { flex: 1; margin: 0; }
+        .toggle-phrase-btn { background: #888; color: white; border: none; padding: 6px 14px; border-radius: 15px; cursor: pointer; font-size: 12px; font-weight: bold; white-space: nowrap; }
         .phrase-input-row { display: flex; gap: 8px; margin-top: 8px; }
         .phrase-add-btn { background: var(--primary-color); color: white; border: none; padding: 10px 14px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: bold; white-space: nowrap; }
         .phrase-add-btn:hover { opacity: 0.85; }
@@ -92,26 +95,37 @@
             <input type="file" accept="image/*" id="file-input" multiple style="margin-top:10px;">
             <div id="img-loading">📷 画像を処理中...</div>
             <div id="collection-container"></div>
+            <div style="margin-top:12px;">
+                <button onclick="resetImages()" style="font-size:10px; background:none; border:1px solid #ccc; cursor:pointer; padding:5px 10px; border-radius:6px;">🖼️ 画像をリセット</button>
+            </div>
             <div style="margin-top:20px;">
-                <label style="font-weight:bold; font-size:14px;">💬 褒め言葉</label>
-                <div class="phrase-input-row">
-                    <input type="text" id="praise-new-input" placeholder="例：天才！" style="flex:1; margin-top:0;">
-                    <button class="phrase-add-btn" onclick="addPhrase('praise')">登録</button>
+                <div class="phrase-section-header">
+                    <label style="font-weight:bold; font-size:14px;">💬 褒め言葉</label>
+                    <button class="toggle-phrase-btn" id="toggle-praise-btn" onclick="togglePhrase('praise')">▼ 表示</button>
                 </div>
-                <ul id="praise-phrase-list" class="phrase-list"></ul>
+                <div id="praise-phrase-body" style="display:none;">
+                    <div class="phrase-input-row">
+                        <input type="text" id="praise-new-input" placeholder="例：天才！" style="flex:1; margin-top:0;">
+                        <button class="phrase-add-btn" onclick="addPhrase('praise')">登録</button>
+                    </div>
+                    <ul id="praise-phrase-list" class="phrase-list"></ul>
+                </div>
             </div>
             <div style="margin-top:16px;">
-                <label style="font-weight:bold; font-size:14px;">⏰ リマインダーセリフ</label>
-                <div class="phrase-input-row">
-                    <input type="text" id="remind-new-input" placeholder="例：時間だよ！" style="flex:1; margin-top:0;">
-                    <button class="phrase-add-btn" onclick="addPhrase('remind')">登録</button>
+                <div class="phrase-section-header">
+                    <label style="font-weight:bold; font-size:14px;">⏰ リマインダーセリフ</label>
+                    <button class="toggle-phrase-btn" id="toggle-remind-btn" onclick="togglePhrase('remind')">▼ 表示</button>
                 </div>
-                <ul id="remind-phrase-list" class="phrase-list"></ul>
+                <div id="remind-phrase-body" style="display:none;">
+                    <div class="phrase-input-row">
+                        <input type="text" id="remind-new-input" placeholder="例：時間だよ！" style="flex:1; margin-top:0;">
+                        <button class="phrase-add-btn" onclick="addPhrase('remind')">登録</button>
+                    </div>
+                    <ul id="remind-phrase-list" class="phrase-list"></ul>
+                </div>
             </div>
-            <!-- [FIX #18] データ初期化に確認ダイアログを追加 -->
-            <div style="margin-top:20px; display:flex; gap:8px; flex-wrap:wrap;">
-                <button onclick="resetImages()" style="font-size:10px; background:none; border:1px solid #ccc; cursor:pointer; padding:5px 10px; border-radius:6px;">🖼️ 画像だけリセット</button>
-                <button onclick="resetTasks()" style="font-size:10px; background:none; border:1px solid #ccc; cursor:pointer; padding:5px 10px; border-radius:6px;">📋 タスクだけリセット</button>
+            <div style="margin-top:20px;">
+                <button onclick="resetTasks()" style="font-size:10px; background:none; border:1px solid #ccc; cursor:pointer; padding:5px 10px; border-radius:6px;">📋 タスクをリセット</button>
             </div>
         </div>
     </div>
@@ -240,6 +254,18 @@ try {
     }
 
     // ─── セリフ管理 ──────────────────────────────────────────────────────
+    function togglePhrase(type) {
+        const body = document.getElementById(`${type}-phrase-body`);
+        const btn  = document.getElementById(`toggle-${type}-btn`);
+        if (body.style.display === 'none') {
+            body.style.display = 'block';
+            btn.textContent = '▲ 非表示';
+        } else {
+            body.style.display = 'none';
+            btn.textContent = '▼ 表示';
+        }
+    }
+
     function getList(type) { return type === 'praise' ? praiseList : remindList; }
 
     function renderPhraseList(type) {
