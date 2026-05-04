@@ -87,6 +87,7 @@
 
         /* セリフ管理UI */
         /* 推し管理 */
+        .oshi-swatches .color-swatch { border: none; }
         .oshi-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: #f9f9f9; border-radius: 10px; margin-bottom: 6px; }
         .oshi-color-dot { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #ddd; flex-shrink: 0; }
         .oshi-name { flex: 1; font-size: 13px; font-weight: bold; }
@@ -119,7 +120,7 @@
         <div class="panel">
             <div style="border-bottom:1px solid #eee; padding-bottom:20px; margin-bottom:20px;">
                 <label style="font-weight:bold; font-size:14px;">👑 推し管理 <span style="font-weight:normal; font-size:12px; color:#999;">（最大5人）</span></label>
-                <div class="color-swatches" style="margin-top:10px;">
+                <div class="color-swatches oshi-swatches" style="margin-top:10px;">
                     <div class="color-swatch" style="background:#888888;" title="グレー"  onclick="setOshiColor('#888888')"></div>
                     <div class="color-swatch" style="background:#e53935;" title="赤"      onclick="setOshiColor('#e53935')"></div>
                     <div class="color-swatch" style="background:#e91e63;" title="ピンク"  onclick="setOshiColor('#e91e63')"></div>
