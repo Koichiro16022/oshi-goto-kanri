@@ -106,6 +106,18 @@
         .phrase-list li span { flex: 1; word-break: break-all; }
         .phrase-edit-btn { background: var(--edit-color); color: white; border: none; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: bold; white-space: nowrap; }
         .phrase-delete-btn { background: #888; color: white; border: none; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: bold; white-space: nowrap; }
+
+        /* カウントダウンエリア */
+        #countdown-area { width: 100%; max-width: 900px; padding: 10px 20px 0; box-sizing: border-box; }
+        .countdown-card { background: linear-gradient(135deg, #e05a7a, #ff9a9a); color: white; border-radius: 15px; padding: 18px 24px; text-align: center; box-shadow: 0 5px 20px rgba(224,90,122,0.35); }
+        #countdown-label { font-size: 0.95rem; font-weight: bold; margin-bottom: 6px; opacity: 0.92; }
+        #countdown-timer { font-size: 2rem; font-weight: bold; letter-spacing: 3px; line-height: 1; }
+        #countdown-tasks { font-size: 0.82rem; margin-top: 8px; opacity: 0.88; }
+
+        /* メインイベントチェックボックス行 */
+        .main-event-row { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
+        .main-event-row input[type="checkbox"] { width: auto; margin: 0; cursor: pointer; accent-color: var(--primary-color); width: 16px; height: 16px; }
+        .main-event-row label { font-size: 13px; color: #555; cursor: pointer; font-weight: bold; user-select: none; }
     </style>
 </head>
 <body>
@@ -114,6 +126,14 @@
 <div id="praise-overlay"><div class="praise-card"><img id="praise-img" src="" alt="推し画像"></div></div>
 
 <button class="toggle-settings-btn" onclick="toggleSettings()">⚙️ 設定（画像やセリフ）</button>
+
+<div id="countdown-area" style="display:none;">
+    <div class="countdown-card">
+        <div id="countdown-label"></div>
+        <div id="countdown-timer"></div>
+        <div id="countdown-tasks"></div>
+    </div>
+</div>
 
 <div class="main-wrapper">
     <div class="left-column" id="settings-area">
@@ -258,6 +278,10 @@
                     <option value="-1">未選択</option>
                 </select>
             </div>
+            <div class="main-event-row">
+                <input type="checkbox" id="main-event-input">
+                <label for="main-event-input">⭐ メインイベント（カウントダウン対象）</label>
+            </div>
             <input type="text" id="todo-input" placeholder="次のお仕事（推し事）は何？">
             <button id="add-btn">タスクを追加</button>
         </div>
@@ -283,6 +307,7 @@ try {
     const intervalInput   = document.getElementById('interval-input');
     const maxNotifyInput  = document.getElementById('max-notify-input');
     const oshiSelect      = document.getElementById('oshi-select');
+    const mainEventInput  = document.getElementById('main-event-input');
     const addBtn          = document.getElementById('add-btn');
     const todoList        = document.getElementById('todo-list');
     const collectionContainer = document.getElementById('collection-container');
@@ -672,7 +697,7 @@ try {
                 <div style="flex:1">
                     <div style="font-size:11px; color:#999">${escapeHtml(task.date || '')} ${escapeHtml(task.time || '')}</div>
                     ${notifyInfo}
-                    <div style="font-weight:bold;">${escapeHtml(task.text)}</div>
+                    <div style="font-weight:bold;">${task.isMain ? '⭐ ' : ''}${escapeHtml(task.text)}</div>
                     ${notifyDone ? '<span class="notify-done-badge">🔕 通知終了</span>' : ''}
                 </div>
                 <div class="btn-group">
@@ -698,6 +723,46 @@ try {
         });
 
         document.title = taskList.length > 0 ? `(${taskList.length}) 推し事管理` : '推し事管理';
+        renderCountdown();
+    }
+
+    // ─── カウントダウン ──────────────────────────────────────────────────
+    let countdownTarget = null;
+
+    function renderCountdown() {
+        const now = new Date();
+        const candidates = taskList.filter(t => t.isMain && t.date && t.time)
+            .map(t => ({ ...t, dt: new Date(`${t.date}T${t.time}`) }))
+            .filter(t => t.dt > now)
+            .sort((a, b) => a.dt - b.dt);
+
+        const area = document.getElementById('countdown-area');
+        if (candidates.length === 0) {
+            area.style.display = 'none';
+            countdownTarget = null;
+            return;
+        }
+
+        countdownTarget = candidates[0];
+        area.style.display = 'block';
+
+        const targetDt = countdownTarget.dt;
+        const diff = targetDt - now;
+        const days  = Math.floor(diff / 86400000);
+        const hours = Math.floor((diff % 86400000) / 3600000);
+        const mins  = Math.floor((diff % 3600000) / 60000);
+
+        document.getElementById('countdown-label').textContent = `🎯 ${countdownTarget.text}まで`;
+        document.getElementById('countdown-timer').textContent =
+            days > 0 ? `${days}日 ${hours}時間 ${mins}分` : `${hours}時間 ${mins}分`;
+
+        const beforeCount = taskList.filter(t => {
+            if (!t.date || !t.time) return false;
+            const dt = new Date(`${t.date}T${t.time}`);
+            return dt < targetDt;
+        }).length;
+        document.getElementById('countdown-tasks').textContent =
+            beforeCount > 0 ? `📋 それまでにやること ${beforeCount}件` : '';
     }
 
     function deleteTask(idx) {
@@ -746,7 +811,8 @@ try {
             maxNotify:    parseInt(maxNotifyInput.value),
             notifyCount:  0,
             lastNotified: null,
-            oshiIdx:      parseInt(oshiSelect.value)
+            oshiIdx:      parseInt(oshiSelect.value),
+            isMain:       mainEventInput.checked
         };
 
         if (editIndex > -1) {
@@ -764,6 +830,7 @@ try {
         intervalInput.value = "0";
         maxNotifyInput.value = "0";
         oshiSelect.value = "-1";
+        mainEventInput.checked = false;
         saveData();
         renderTasks();
     });
@@ -776,8 +843,9 @@ try {
         timeInput.value    = task.time;
         intervalInput.value  = task.interval  || "0";
         maxNotifyInput.value = task.maxNotify || "0";
-        oshiSelect.value     = (task.oshiIdx != null) ? task.oshiIdx : "-1";
-        editIndex            = idx;
+        oshiSelect.value       = (task.oshiIdx != null) ? task.oshiIdx : "-1";
+        mainEventInput.checked = !!task.isMain;
+        editIndex              = idx;
         addBtn.textContent = "修正を保存する";
         addBtn.classList.add('edit-mode');
         todoInput.focus();
@@ -885,6 +953,11 @@ try {
             btn.addEventListener('click', () => deleteArchiveItem(parseInt(btn.dataset.idx)));
         });
     }
+
+    // ─── カウントダウン毎秒更新 ──────────────────────────────────────────
+    setInterval(() => {
+        if (countdownTarget) renderCountdown();
+    }, 1000);
 
     // ─── 通知チェック（setInterval） ────────────────────────────────────
     // [FIX #14] Page Visibility APIでバックグラウンド時はスキップ
