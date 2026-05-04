@@ -632,6 +632,11 @@ try {
         archiveCount.textContent = archivedTasks.length;
         archiveList.innerHTML = '';
 
+        if (archivedTasks.length === 0) {
+            archiveList.innerHTML = '<li style="color:#bbb; font-size:13px; justify-content:center; border-left:none; background:none; box-shadow:none;">完了済みタスクはありません</li>';
+            return;
+        }
+
         archivedTasks.forEach((task, idx) => {
             const li = document.createElement('li');
             li.innerHTML = `
