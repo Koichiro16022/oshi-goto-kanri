@@ -61,8 +61,8 @@
         .archive-btn-group { display: flex; flex-direction: column; gap: 4px; align-items: flex-end; }
         .restore-btn { background: #e8f5e9; border: 1px solid #a5d6a7; color: #388e3c; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 11px; white-space: nowrap; font-weight: bold; }
         .restore-btn:hover { background: #c8e6c9; }
-        .archive-delete-btn { background: none; border: 1px solid #ccc; color: #aaa; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 11px; white-space: nowrap; }
-        .archive-delete-btn:hover { background: #eee; }
+        .archive-delete-btn { background: #bbb; border: none; color: white; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 11px; white-space: nowrap; font-weight: bold; }
+        .archive-delete-btn:hover { background: #999; }
         .archive-delete-note { font-size: 9px; color: #ccc; text-align: center; }
         .completed-at { font-size: 10px; color: #bbb; margin-top: 2px; }
     </style>
@@ -362,6 +362,8 @@ try {
 
     // ─── アーカイブ個別削除 ──────────────────────────────────────────────
     function deleteArchiveItem(idx) {
+        const taskName = archivedTasks[idx] ? archivedTasks[idx].text : '';
+        if (!confirm(`「${taskName}」をアーカイブから削除しますか？\nこの操作は取り消せません。`)) return;
         archivedTasks.splice(idx, 1);
         saveData();
         renderArchive();
