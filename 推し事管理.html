@@ -371,6 +371,7 @@ try {
     const imgLoading      = document.getElementById('img-loading');
 
     let imageCollection = [];
+    let imageQueue      = [];
     let taskList        = [];
     let archivedTasks   = [];
     let praiseList      = ["天才！！","最高！","さすがだよ！","偉すぎる！","素晴らしい成果です！","あなたの管理能力には驚かされます","今日も完璧な仕事ぶりでしたね","着実に目標へ近づいていますよ！","素晴らしい集中力でした","いつも頼りにしています","ほんま、よう頑張ったな！","惚れ直したわ！","あんたが一番やで！","神レベルやんか！","明日もこの調子でいったろ！","あんたがおってくれて助かったー！","あんたの頑張り、ちゃんと見とるよ！","もう、大好きになっちゃうね！","かっこよかー！惚れ惚れするばい！","あんた、すごかー！"];
@@ -1151,7 +1152,7 @@ try {
 
         // [FIX #7] 画像なしでも動くように
         if (imageCollection.length > 0) {
-            praiseEl.src = imageCollection[Math.floor(Math.random() * imageCollection.length)];
+            praiseEl.src = getNextImage();
             overlay.style.display = 'flex';
         }
 
@@ -1298,9 +1299,26 @@ try {
         fileInput.style.cursor  = isFull ? 'not-allowed' : '';
     }
 
+    function saveImageQueue() {
+        localStorage.setItem('oshigoto_imgqueue', JSON.stringify(imageQueue));
+    }
+
+    function getNextImage() {
+        if (imageCollection.length === 0) return null;
+        imageQueue = imageQueue.filter(src => imageCollection.includes(src));
+        if (imageQueue.length === 0) {
+            imageQueue = [...imageCollection].sort(() => Math.random() - 0.5);
+        }
+        const img = imageQueue.shift();
+        saveImageQueue();
+        return img;
+    }
+
     function deleteImage(idx) {
         if (!confirm('この画像を削除しますか？')) return;
         imageCollection.splice(idx, 1);
+        imageQueue = [];
+        saveImageQueue();
         renderCollection();
         saveData();
     }
@@ -1310,6 +1328,8 @@ try {
     function resetImages() {
         if (!confirm('⚠️ 登録した推し画像をすべて削除しますか？\nタスクは消えません。この操作は取り消せません。')) return;
         imageCollection = [];
+        imageQueue = [];
+        saveImageQueue();
         saveData();
         renderCollection();
     }
@@ -1372,6 +1392,9 @@ try {
     todoInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') addBtn.click(); });
     document.getElementById('praise-new-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') addPhrase('praise'); });
     document.getElementById('remind-new-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') addPhrase('remind'); });
+
+    // 画像キューの読み込み
+    try { const q = localStorage.getItem('oshigoto_imgqueue'); if (q) imageQueue = JSON.parse(q); } catch(e) {}
 
     // 推し管理の読み込み
     const savedOshi = localStorage.getItem('oshigoto_oshi');
