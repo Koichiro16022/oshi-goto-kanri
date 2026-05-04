@@ -34,6 +34,7 @@
         .btn-group { display: flex; gap: 8px; }
         .complete-btn { background: #4caf50; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 12px; }
         .edit-task-btn { background: var(--edit-color); color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 12px; }
+        .delete-task-btn { background: #888; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 12px; }
 
         /* [FIX #19] オーバーレイはクリックで閉じられるようにpointer-eventsを有効化 */
         #praise-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 2000; cursor: pointer; }
@@ -123,9 +124,6 @@
                     </div>
                     <ul id="remind-phrase-list" class="phrase-list"></ul>
                 </div>
-            </div>
-            <div style="margin-top:20px;">
-                <button onclick="resetTasks()" style="font-size:10px; background:none; border:1px solid #ccc; cursor:pointer; padding:5px 10px; border-radius:6px;">📋 タスクをリセット</button>
             </div>
         </div>
     </div>
@@ -346,6 +344,7 @@ try {
                 <div class="btn-group">
                     <button class="edit-task-btn" data-idx="${idx}">修正</button>
                     <button class="complete-btn" data-idx="${idx}">完了！</button>
+                    <button class="delete-task-btn" data-idx="${idx}">削除</button>
                 </div>`;
             todoList.appendChild(li);
         });
@@ -357,6 +356,24 @@ try {
         todoList.querySelectorAll('.complete-btn').forEach(btn => {
             btn.addEventListener('click', () => completeTask(parseInt(btn.dataset.idx)));
         });
+        todoList.querySelectorAll('.delete-task-btn').forEach(btn => {
+            btn.addEventListener('click', () => deleteTask(parseInt(btn.dataset.idx)));
+        });
+    }
+
+    function deleteTask(idx) {
+        const taskName = taskList[idx] ? taskList[idx].text : '';
+        if (!confirm(`「${taskName}」を削除しますか？\nアーカイブには残りません。`)) return;
+        if (editIndex === idx) {
+            editIndex = -1;
+            addBtn.textContent = "タスクを追加";
+            addBtn.classList.remove('edit-mode');
+        } else if (editIndex > idx) {
+            editIndex--;
+        }
+        taskList.splice(idx, 1);
+        saveData();
+        renderTasks();
     }
 
     // ─── タスク追加・編集 ────────────────────────────────────────────────
