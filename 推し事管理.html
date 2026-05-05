@@ -95,6 +95,9 @@
         .oshi-name { flex: 1; font-size: 13px; font-weight: bold; }
         .oshi-main-btn { background: #f0c040; color: #333; border: none; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: bold; white-space: nowrap; }
         .oshi-delete-btn { background: #888; color: white; border: none; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: bold; white-space: nowrap; }
+        .oshi-move-btn { background: #ddd; color: #555; border: none; padding: 3px 7px; border-radius: 5px; cursor: pointer; font-size: 11px; font-weight: bold; white-space: nowrap; }
+        .oshi-move-btn:hover:not(:disabled) { background: #bbb; }
+        .oshi-move-btn:disabled { opacity: 0.25; cursor: default; }
 
         .phrase-section-header { display: flex; align-items: center; gap: 10px; }
         .phrase-section-header label { flex: 1; margin: 0; }
@@ -538,6 +541,24 @@ try {
         renderOshiList();
     }
 
+    function moveOshi(idx, dir) {
+        const newIdx = idx + dir;
+        if (newIdx < 0 || newIdx >= oshiList.length) return;
+        [oshiList[idx], oshiList[newIdx]] = [oshiList[newIdx], oshiList[idx]];
+        taskList.forEach(task => {
+            if (task.oshiIdx === idx) task.oshiIdx = newIdx;
+            else if (task.oshiIdx === newIdx) task.oshiIdx = idx;
+        });
+        archivedTasks.forEach(task => {
+            if (task.oshiIdx === idx) task.oshiIdx = newIdx;
+            else if (task.oshiIdx === newIdx) task.oshiIdx = idx;
+        });
+        saveOshiData();
+        saveData();
+        renderOshiList();
+        renderTasks();
+    }
+
     const OSHI_PRESET_COLORS = [
         { color: '#888888', label: 'グレー' }, { color: '#FF0000', label: '赤' },
         { color: '#FF66CC', label: 'ピンク' }, { color: '#FF6600', label: 'オレンジ' },
@@ -621,9 +642,14 @@ try {
             div.innerHTML = `
                 <div class="oshi-color-dot" style="background:${escapeHtml(oshi.color)};"></div>
                 <span class="oshi-name">${escapeHtml(oshi.name)}</span>
+                <button class="oshi-move-btn" data-idx="${idx}" data-dir="-1" ${idx === 0 ? 'disabled' : ''}>▲</button>
+                <button class="oshi-move-btn" data-idx="${idx}" data-dir="1" ${idx === oshiList.length - 1 ? 'disabled' : ''}>▼</button>
                 <button class="phrase-edit-btn" data-idx="${idx}">修正</button>
                 <button class="oshi-delete-btn" data-idx="${idx}">削除</button>`;
             container.appendChild(div);
+        });
+        container.querySelectorAll('.oshi-move-btn').forEach(btn => {
+            btn.addEventListener('click', () => moveOshi(parseInt(btn.dataset.idx), parseInt(btn.dataset.dir)));
         });
         container.querySelectorAll('.phrase-edit-btn').forEach(btn => {
             btn.addEventListener('click', () => editOshi(parseInt(btn.dataset.idx)));
