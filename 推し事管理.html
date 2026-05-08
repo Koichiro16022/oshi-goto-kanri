@@ -1122,10 +1122,22 @@ try {
         if (countdownTarget) renderCountdown();
     }, 1000);
 
+    // ─── システム通知（Notifications API） ──────────────────────────────
+    // HTTPS または localhost 環境でのみ動作します
+    function requestNotificationPermission() {
+        if (!('Notification' in window)) return;
+        if (Notification.permission === 'default') Notification.requestPermission();
+    }
+
+    function sendSystemNotification(title, body) {
+        if (!('Notification' in window)) return;
+        if (Notification.permission !== 'granted') return;
+        new Notification(title, { body, icon: 'icon.png' });
+    }
+
     // ─── 通知チェック（setInterval） ────────────────────────────────────
-    // [FIX #14] Page Visibility APIでバックグラウンド時はスキップ
+    // バックグラウンド時はシステム通知のみ発火、フォアグラウンド時はシャワーエフェクトも表示
     setInterval(() => {
-        if (document.hidden) return;
         if (isQuietTime()) return;
 
         const now         = new Date();
@@ -1154,9 +1166,17 @@ try {
             if ((isInitial || isRepeat || isMissed) && task.lastNotified !== nowTotal) {
                 task.lastNotified = nowTotal;
                 task.notifyCount  = count + 1;
-                if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-                playBeep();
-                showShowerEffect(remindList.join(','), `時間だよ！「${task.text}」！`);
+                const phrase = remindList.length > 0
+                    ? remindList[Math.floor(Math.random() * remindList.length)]
+                    : '時間だよ！';
+                // システム通知：バックグラウンド時も含め常に送信
+                sendSystemNotification(task.text, phrase);
+                // フォアグラウンド時のみシャワーエフェクト・音を出す
+                if (!document.hidden) {
+                    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+                    playBeep();
+                    showShowerEffect(remindList.join(','), `時間だよ！「${task.text}」！`);
+                }
                 saveData();
                 if (max > 0 && task.notifyCount >= max) renderTasks(); // 上限到達時にバッジ表示
             }
@@ -1412,6 +1432,9 @@ try {
         canvas.width  = window.innerWidth;
         canvas.height = window.innerHeight;
         animate();
+
+        // システム通知の許可をリクエスト（HTTPS / localhost 環境でのみ有効）
+        requestNotificationPermission();
     });
 
     // [FIX #15] 日付/時刻 入力変化時に警告を消す
